@@ -1,54 +1,51 @@
 <script>
   let calendar; // Global calendar object
 
-  // ===== RENDER CALENDAR =====
-  function renderCalendar(events) {
-    const calEl = document.getElementById('calendar');
-    if (!calEl) return;
+/* ---------- 1. RENDER CALENDAR ---------- */
+function renderCalendar(events) {
+  const calEl = document.getElementById('calendar');
+  if (!calEl) return;
 
-    if (calendar) {
-      calendar.removeAllEvents();
-      calendar.addEventSource(events);
-      return; // ✅ ไม่ต้องสร้างใหม่
-    }
-
-    calendar = new FullCalendar.Calendar(calEl, {
-      initialView: 'dayGridMonth',
-      headerToolbar: {
-        left: 'prev,next today refreshBtn',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-      },
-      customButtons: {
-        refreshBtn: {
-          text: '🔄 รีเฟรช',
-          click: () => {
-            google.script.run.withSuccessHandler(events => {
-              calendar.removeAllEvents();
-              calendar.addEventSource(events);
-            }).listEvents();
-          }
-        }
-      },
-      events,
-      eventClick(info) {
-        const e = info.event;
-        const props = e.extendedProps;
-        const html = `
-          <b>${e.title}</b><br>
-          เวลา: ${e.start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${e.end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}<br>
-          ผู้จอง: ${props.booker}<br>
-          ฝ่าย: ${props.department}<br>
-          บริษัท: ${props.company}<br>
-          วัตถุประสงค์: <i>${props.purpose}</i><br>
-          สถานะ: ${props.status || '-'}
-        `;
-        M.toast({ html, displayLength: 7000 });
-      }
-    });
-
-    calendar.render();
+  // มีอยู่แล้ว ⇒ แค่โหลด event ใหม่
+  if (calendar && events) {
+    calendar.removeAllEvents();
+    calendar.addEventSource(events);
+    return;
   }
+
+  // สร้างครั้งแรก
+  calendar = new FullCalendar.Calendar(calEl, {
+  initialView: 'dayGridMonth',
+  height: '100%', // ✅ ทำให้ calendar สูงเท่าที่จำเป็น
+  headerToolbar: {
+    left: 'prev,next today refreshBtn',
+    center: 'title',
+    right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+  },
+  customButtons: {
+    refreshBtn: {
+      text: '🔄 รีเฟรช',
+      click() {
+        google.script.run.withSuccessHandler(ev => renderCalendar(ev))
+                         .listEvents();
+      }
+    }
+  },
+  events,
+  eventClick(info) {
+    const p   = info.event.extendedProps;
+    const txt = `
+      <b>${info.event.title}</b><br>
+      เวลา: ${info.event.start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+      – ${info.event.end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}<br>
+      ผู้จอง: ${p.booker}<br>ฝ่าย: ${p.department}<br>บริษัท: ${p.company}<br>
+      วัตถุประสงค์: <i>${p.purpose}</i><br>สถานะ: ${p.status || '-'}
+    `;
+    M.toast({ html: txt, displayLength: 7000 });
+  }
+});
+  calendar.render();
+}
 
   // ===== FORM SUBMIT HANDLER =====
  function handleSubmit(e) {
@@ -165,4 +162,32 @@
 
   // ===== INITIAL LOAD =====
   window.addEventListener('load', () => loadView('calendar'));
+
+  document.addEventListener("DOMContentLoaded", () => {
+  const savedTheme = localStorage.getItem("theme") || "dark";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+  document.getElementById("themeToggle").checked = savedTheme === "light";
+});
+
+function toggleTheme() {
+  const checkbox = document.getElementById("themeToggle");
+  const nextTheme = checkbox.checked ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", nextTheme);
+  localStorage.setItem("theme", nextTheme);
+}
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const theme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", theme);
+    document.getElementById("themeToggle").checked = theme === "dark";
+  });
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+  }
 </script>
