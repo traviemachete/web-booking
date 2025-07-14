@@ -49,7 +49,7 @@ function listEvents(){
 
     events.push({
       id,
-      title: `${purpose} (${name})`,
+      title: `${formatTime(startT)} ${purpose || 'ประชุม'}`,
       start,
       end,
       backgroundColor: color,
