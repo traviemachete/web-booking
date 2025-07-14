@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <?!= include('Stylesheet') ?>
+  <style>
+    body {
+      display: flex;
+      margin: 0;
+      font-family: 'Kanit', sans-serif;
+    }
+
+    .sidebar {
+      width: 240px;
+      background-color: #263238;
+      color: #fff;
+      height: 100vh;
+      padding-top: 20px;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+
+    .sidebar h5 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .sidebar a {
+      display: block;
+      color: white;
+      text-decoration: none;
+      padding: 12px 20px;
+      transition: 0.2s;
+    }
+
+    .sidebar a:hover {
+      background-color: #455A64;
+    }
+
+    .main {
+      margin-left: 240px;
+      padding: 20px;
+      flex-grow: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h5>เมนูระบบ</h5>
+    <a href="#" onclick="loadView('calendar'); return false;">📅 หน้าหลัก</a>
+    <a href="#" onclick="loadView('form'); return false;">📝 จองห้องประชุม</a>
+    <a href="#" onclick="loadView('login'); return false;">👤 เข้าสู่ระบบ</a>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <div id="mainContent">
+      <!-- Content loaded by loadView will appear here -->
+    </div>
+  </div>
+
+  <?!= include('JavaScript') ?>
+
+  <script>
+    // Load default view when page is ready
+      window.addEventListener('load', () => loadView('calendar'));
+  </script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+</body>
+
+</html>
