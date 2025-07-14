@@ -16,9 +16,9 @@ const TZ         = 'Asia/Bangkok';
 function doGet() {
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
+    .setTitle('Meeting Room')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .setTitle('Meeting‑Room Calendar')
-    .addMetaTag('viewport', 'width=device-width,initial-scale=1');
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 function include(name){
   return HtmlService.createHtmlOutputFromFile(name).getContent();
