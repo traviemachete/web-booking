@@ -3,29 +3,55 @@
 
 <head>
   <base target="_top">
+  <title>ระบบจองห้องประชุม</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Kanit&display=swap" rel="stylesheet">
+
+  <!-- Custom Theme -->
   <?!= include('Stylesheet') ?>
+
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
   <style>
+    html,
     body {
-      display: flex;
       margin: 0;
+      padding: 0;
+      height: 100%;
       font-family: 'Kanit', sans-serif;
+      background-color: #202124;
+      color: #e8eaed;
     }
 
+    body {
+      display: flex;
+      flex-direction: row;
+    }
+
+    /* -------- Sidebar -------- */
     .sidebar {
       width: 240px;
-      background-color: #263238;
-      color: #fff;
+      background-color: #303134;
+      color: white;
       height: 100vh;
       padding-top: 20px;
-      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
       position: fixed;
-      top: 0;
       left: 0;
+      top: 0;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+      z-index: 100;
     }
 
     .sidebar h5 {
       text-align: center;
       margin-bottom: 30px;
+      color: #9aa0a6;
     }
 
     .sidebar a {
@@ -34,21 +60,87 @@
       text-decoration: none;
       padding: 12px 20px;
       transition: 0.2s;
+      border-left: 4px solid transparent;
     }
 
     .sidebar a:hover {
-      background-color: #455A64;
+      background-color: #3c4043;
+      border-left: 4px solid #8ab4f8;
     }
 
+    /* -------- Main Content -------- */
     .main {
       margin-left: 240px;
       padding: 20px;
-      flex-grow: 1;
+      width: calc(100% - 240px);
+      min-height: 100vh;
+      overflow-y: auto;
+      background-color: #202124;
+
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+
+    #mainContent {
+      height: calc(100vh - 40px);
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+    }
+
+    #calendar {
+      height: 100%;
+      max-height: 100%;
+      overflow: auto;
+    }
+
+    .fc {
+      height: 80% !important;
+      max-height: 80% !important;
+    }
+
+    @media screen and (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+      }
+
+      .sidebar h5 {
+        display: none;
+      }
+
+      .main {
+        margin-left: 0;
+        padding-top: 20px;
+        width: 100%;
+      }
     }
   </style>
 </head>
 
 <body>
+
+
+  <!-- Theme Toggle -->
+  <div class="theme-switch-wrapper">
+    <label class="theme-switch">
+    <input type="checkbox" id="themeToggle" onchange="toggleTheme()" />
+    <span class="slider">
+      <svg class="icon moon" viewBox="0 0 24 24"><path fill="white" d="M21 12.79A9 9 0 0 1 11.21 3c-.16 0-.31.01-.47.02A9 9 0 1 0 21 12.79Z"/></svg>
+      <svg class="icon sun" viewBox="0 0 24 24"><path fill="black" d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0 2a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm0-18a1 1 0 0 1 1-1h0a1 1 0 0 1 0 2h0a1 1 0 0 1-1-1Zm0 18a1 1 0 0 1 1 1h0a1 1 0 0 1-2 0h0a1 1 0 0 1 1-1Zm10-8a1 1 0 0 1 1 1h0a1 1 0 0 1-2 0h0a1 1 0 0 1 1-1Zm-18 0a1 1 0 0 1 1 1h0a1 1 0 0 1-2 0h0a1 1 0 0 1 1-1Zm14.95-5.05a1 1 0 0 1 1.41 1.41h0a1 1 0 0 1-1.41-1.41Zm-13.9 13.9a1 1 0 0 1 1.41 1.41h0a1 1 0 0 1-1.41-1.41Zm0-13.9a1 1 0 0 1 1.41 1.41h0a1 1 0 0 1-1.41-1.41Zm13.9 13.9a1 1 0 0 1 1.41 1.41h0a1 1 0 0 1-1.41-1.41Z"/></svg>
+    </span>
+  </label>
+  </div>
+
+
+
   <!-- Sidebar -->
   <div class="sidebar">
     <h5>เมนูระบบ</h5>
@@ -59,20 +151,20 @@
 
   <!-- Main content -->
   <div class="main">
-    <div id="mainContent">
-      <!-- Content loaded by loadView will appear here -->
-    </div>
+    <div id="mainContent"></div>
   </div>
 
+  <!-- Script includes -->
   <?!= include('JavaScript') ?>
+
+  <!-- FullCalendar + SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script>
     // Load default view when page is ready
-      window.addEventListener('load', () => loadView('calendar'));
+    window.addEventListener('load', () => loadView('calendar'));
   </script>
-  <!-- SweetAlert2 -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 </body>
 
 </html>
