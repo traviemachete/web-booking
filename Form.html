@@ -1,0 +1,49 @@
+<!-- Form.html -->
+<div class="container">
+  <h4 class="center-align">แบบฟอร์มจองห้องประชุม</h4>
+  <form id="form" onsubmit="return handleSubmit(event)">
+    <div class="input-field">
+      <label for="date">วันที่ต้องการใช้ห้อง</label>
+      <input type="date" name="date" id="date" required>
+    </div>
+
+    <div class="input-field">
+      <label for="start">เวลาเริ่ม</label>
+      <input type="time" name="start" id="start" required>
+    </div>
+
+    <div class="input-field">
+      <label for="end">เวลาสิ้นสุด</label>
+      <input type="time" name="end" id="end" required>
+    </div>
+
+    <div class="input-field">
+      <label for="name">ชื่อผู้จอง</label>
+      <input type="text" name="name" id="name" required>
+    </div>
+
+    <div class="input-field">
+      <label for="department">สังกัดฝ่าย</label>
+      <input type="text" name="department" id="department">
+    </div>
+
+    <div class="input-field">
+      <label for="company">สังกัดบริษัท</label>
+      <input type="text" name="company" id="company">
+    </div>
+
+    <div class="input-field">
+      <label for="purpose">วัตถุประสงค์</label>
+      <input type="text" name="purpose" id="purpose">
+    </div>
+
+    <div class="input-field">
+      <label for="email">อีเมล</label>
+      <input type="email" name="email" id="email">
+    </div>
+
+    <div class="center-align" style="margin-top: 1rem;">
+      <button class="btn green" type="submit" id="submitBtn">💾 บันทึกการจอง</button>
+    </div>
+  </form>
+</div>
