@@ -1,0 +1,168 @@
+<script>
+  let calendar; // Global calendar object
+
+  // ===== RENDER CALENDAR =====
+  function renderCalendar(events) {
+    const calEl = document.getElementById('calendar');
+    if (!calEl) return;
+
+    if (calendar) {
+      calendar.removeAllEvents();
+      calendar.addEventSource(events);
+      return; // ✅ ไม่ต้องสร้างใหม่
+    }
+
+    calendar = new FullCalendar.Calendar(calEl, {
+      initialView: 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today refreshBtn',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+      },
+      customButtons: {
+        refreshBtn: {
+          text: '🔄 รีเฟรช',
+          click: () => {
+            google.script.run.withSuccessHandler(events => {
+              calendar.removeAllEvents();
+              calendar.addEventSource(events);
+            }).listEvents();
+          }
+        }
+      },
+      events,
+      eventClick(info) {
+        const e = info.event;
+        const props = e.extendedProps;
+        const html = `
+          <b>${e.title}</b><br>
+          เวลา: ${e.start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${e.end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}<br>
+          ผู้จอง: ${props.booker}<br>
+          ฝ่าย: ${props.department}<br>
+          บริษัท: ${props.company}<br>
+          วัตถุประสงค์: <i>${props.purpose}</i><br>
+          สถานะ: ${props.status || '-'}
+        `;
+        M.toast({ html, displayLength: 7000 });
+      }
+    });
+
+    calendar.render();
+  }
+
+  // ===== FORM SUBMIT HANDLER =====
+ function handleSubmit(e) {
+  e.preventDefault();
+  const f = e.target;
+  const btn = f.querySelector('button[type="submit"]');
+  btn.disabled = true;
+
+  const data = {
+    date:        f.date.value,
+    start:       f.start.value,
+    end:         f.end.value,
+    name:        f.name.value,
+    department:  f.department.value,
+    company:     f.company.value,
+    purpose:     f.purpose.value,
+    email:       f.email.value
+  };
+
+  google.script.run
+    .withSuccessHandler(() => {
+      Swal.fire({
+        icon: 'success',
+        title: 'จองสำเร็จ!',
+        text: '✅ ระบบได้บันทึกการจองเรียบร้อยแล้ว'
+      }).then(() => {
+        loadView('calendar', true); // ✅ refresh calendar ไม่ต้อง reload ทั้งหน้า
+      });
+
+      f.reset();
+      btn.disabled = false;
+    })
+    .withFailureHandler(err => {
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: err.message // ✅ จะแสดงข้อความเวลา conflict จาก `throw new Error(...)`
+      });
+      btn.disabled = false;
+    })
+    .submitBooking(data); // ✅ เรียกตรงได้ เพราะเรารองรับ error แล้ว
+}
+
+
+
+  // ===== LOAD VIEW (SIDEBAR ROUTER) =====
+  function loadView(view, forceRefresh = false) {
+  const main = document.getElementById('mainContent');
+  const map = {
+    calendar: 'CalendarView',
+    form: 'Form',
+    login: 'Login'
+  };
+
+  google.script.run.withSuccessHandler(html => {
+    main.innerHTML = html;
+
+    if (view === 'calendar') {
+      // รอ DOM พร้อมก่อน
+      setTimeout(() => {
+        const calEl = document.getElementById('calendar');
+        if (!calEl) return;
+
+        // ดึงข้อมูลใหม่จาก server
+        google.script.run.withSuccessHandler(events => {
+          // ล้างปฏิทินเดิม (ถ้ามี)
+          if (calendar) {
+            calendar.destroy();
+          }
+
+          // สร้างใหม่ทุกครั้งเพื่อความแน่นอน
+          calendar = new FullCalendar.Calendar(calEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+              left: 'prev,next today refreshBtn',
+              center: 'title',
+              right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+            },
+            customButtons: {
+              refreshBtn: {
+                text: '🔄 รีเฟรช',
+                click: () => {
+                  google.script.run.withSuccessHandler(events => {
+                    calendar.removeAllEvents();
+                    calendar.addEventSource(events);
+                  }).listEvents();
+                }
+              }
+            },
+            events,
+            eventClick(info) {
+              const e = info.event;
+              const props = e.extendedProps;
+              const html = `
+                <b>${e.title}</b><br>
+                เวลา: ${e.start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${e.end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}<br>
+                ผู้จอง: ${props.booker}<br>
+                ฝ่าย: ${props.department}<br>
+                บริษัท: ${props.company}<br>
+                วัตถุประสงค์: <i>${props.purpose}</i><br>
+                สถานะ: ${props.status || '-'}
+              `;
+              M.toast({ html, displayLength: 7000 });
+            }
+          });
+
+          calendar.render(); // ✅ render แน่นอนหลังสร้าง
+        }).listEvents();
+      }, 100); // รอ DOM render แล้วค่อยโหลดข้อมูล
+    }
+
+  }).include(map[view] || 'Calendar');
+}
+
+  // ===== INITIAL LOAD =====
+  window.addEventListener('load', () => loadView('calendar'));
+</script>
