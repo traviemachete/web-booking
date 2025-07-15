@@ -551,3 +551,16 @@ window.handleSubmit = handleSubmit;
 window.loadView = loadView;
 window.refreshCalendarData = refreshCalendarData;
 </script>
+
+
+<script>
+function requireLogin(cb){
+  google.script.run.withSuccessHandler(function(user){
+    if(user){ cb(); }
+    else{
+      M.toast({html:'🔒 กรุณา Login ก่อนทำรายการ'});
+      loadView('login');
+    }
+  }).getSessionUser();
+}
+</script>
