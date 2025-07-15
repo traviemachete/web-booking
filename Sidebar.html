@@ -129,20 +129,44 @@
 </style>
 
 <script>
-  // โหลดสถานะผู้ใช้
   function renderUserBox() {
     google.script.run.withSuccessHandler(user => {
       const el = document.getElementById("userInfo");
+      const menu = document.querySelector(".menu");
+      
+      // เคลียร์เมนูเก่า
+      menu.innerHTML = '';
 
       if (user) {
+        // กล่องผู้ใช้
         el.innerHTML = `
           <p>👤 <strong>${user.name}</strong></p>
           <button class="btn-login" onclick="logout()">🚪 ออกจากระบบ</button>
         `;
+
+        // เมนูสำหรับผู้ใช้ที่ login แล้ว
+        menu.innerHTML += `
+          <li><a href="#" onclick="loadView('calendar')">📅 หน้าหลัก</a></li>
+          <li><a href="#" onclick="ensureAuth(() => loadView('form'))">📝 จองห้องประชุม</a></li>
+          <li><a href="#" onclick="loadView('mybookings')">📋 รายการของฉัน</a></li>
+        `;
+
+        if (user.role === 'admin') {
+          menu.innerHTML += `
+            <li><a href="#" onclick="loadView('admin')">🔧 ผู้ดูแลระบบ</a></li>
+          `;
+        }
+
       } else {
+        // ยังไม่ login
         el.innerHTML = `
           <p class="not-logged"><strong>ยังไม่ได้เข้าสู่ระบบ</strong></p>
           <button class="btn-login" onclick="loadView('login')">เข้าสู่ระบบ</button>
+        `;
+
+        menu.innerHTML = `
+          <li><a href="#" onclick="loadView('calendar')">📅 หน้าหลัก</a></li>
+          <li><a href="#" onclick="loadView('login')">🔑 เข้าสู่ระบบ</a></li>
         `;
       }
     }).getSessionUser();
@@ -168,3 +192,4 @@
 
   window.addEventListener("DOMContentLoaded", renderUserBox);
 </script>
+
