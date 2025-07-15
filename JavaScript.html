@@ -1,5 +1,5 @@
 <script>
-/* ========================================
+  /* ========================================
    MEETING ROOM BOOKING SYSTEM - JavaScript
    ======================================== */
 
@@ -31,6 +31,12 @@ function renderCalendar(events = []) {
     locale: 'th',
     firstDay: 0, // Sunday
     
+     /* บังคับรูปแบบเวลาให้มีนาทีเสมอ */
+    eventTimeFormat: {
+      hour:   '2-digit',
+      minute: '2-digit',
+      hour12: false      // 24 ชม.  →  “10:00”
+    },
     // Header toolbar configuration
     headerToolbar: {
       left: 'prev,next today',
@@ -508,6 +514,19 @@ function getSampleEvents() {
     }
   ];
 }
+
+// Funtion Auth
+function ensureAuth(callback){
+  google.script.run.withSuccessHandler(user => {
+    if (user) {
+      callback();
+    } else {
+      M.toast({html: "กรุณาเข้าสู่ระบบก่อนใช้งาน"});
+      loadView('login');
+    }
+  }).getSessionUser();
+}
+
 
 /* ========== INITIALIZATION ========== */
 
