@@ -1,0 +1,35 @@
+<div class="auth-box">
+  <h3>สมัครสมาชิก</h3>
+  <form id="registerForm">
+    <input name="name" type="text" placeholder="ชื่อ - สกุล" required />
+    <input name="email" type="email" placeholder="Email" required />
+    <input name="pwd" type="password" placeholder="รหัสผ่าน" required />
+    <input name="confirm" type="password" placeholder="ยืนยันรหัสผ่าน" required />
+    <button class="btn green" type="submit">สมัคร</button>
+    <p class="small"><a href="#" onclick="loadView('login')">กลับสู่หน้า Login</a></p>
+  </form>
+</div>
+
+<script>
+document.getElementById("registerForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const name  = e.target.name.value.trim();
+  const email = e.target.email.value.trim();
+  const pwd   = e.target.pwd.value.trim();
+  const confirm = e.target.confirm.value.trim();
+
+  if (pwd !== confirm) {
+    M.toast({html: "❌ รหัสผ่านไม่ตรงกัน"});
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(() => {
+      M.toast({html: '✅ ลงทะเบียนเรียบร้อย'});
+      renderUserBox();
+      loadView('calendar');
+    })
+    .withFailureHandler(err => M.toast({html: err.message}))
+    .registerUser({name, email, pwd});
+});
+</script>
