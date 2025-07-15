@@ -24,7 +24,7 @@ document.getElementById("registerForm").addEventListener("submit", e => {
   }
 
   google.script.run
-    .withSuccessHandler(() => {
+    .withSuccessHandler(function(){ parent.M.toast({html:'✅ สมัครสำเร็จ กรุณา Login'}); parent.loadView('login'); }) => {
       M.toast({html: '✅ ลงทะเบียนเรียบร้อย'});
       renderUserBox();
       loadView('calendar');
