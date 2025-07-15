@@ -44,7 +44,7 @@
     --sidebar-color: var(--google-gray-900);
     --sidebar-border: var(--google-gray-700);
     --hover-color: var(--google-gray-800);
-    --event-color: #8ab4f8;
+    --event-color: #4285f4;
     --today-bg: rgba(138, 180, 248, 0.2);
     --border-color: var(--google-gray-700);
   }
@@ -56,7 +56,8 @@
     padding: 0;
   }
 
-  html, body {
+  html,
+  body {
     height: 100%;
     font-family: 'Kanit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--bg-color);
@@ -245,9 +246,16 @@
   .fc-col-header-cell {
     padding: 12px 8px !important;
     font-weight: 600 !important;
-    color: var(--text-secondary) !important;
+    color: var(--text-color) !important;
     border-color: var(--border-color) !important;
     background: var(--bg-secondary) !important;
+  }
+
+  /* Dark theme header fix */
+  [data-theme="dark"] .fc-col-header-cell {
+    background-color: var(--google-gray-1500) !important;
+    color: #ffffff !important;
+    border-color: var(--google-gray-600) !important;
   }
 
   .fc-daygrid-day {
@@ -264,11 +272,29 @@
     background: var(--today-bg) !important;
   }
 
+  /* วันที่อยู่นอกเดือน (เทาๆ) */
+  .fc-day-other {
+    background-color: var(--bg-secondary) !important;
+    opacity: 0.5 !important;
+  }
+
+  .fc-day-other .fc-daygrid-day-number {
+    color: var(--text-secondary) !important;
+    opacity: 0.7 !important;
+  }
+
+  /* วันในเดือน */
   .fc-daygrid-day-number {
     color: var(--text-color) !important;
     font-weight: 500 !important;
     padding: 8px 12px !important;
     font-size: 14px !important;
+  }
+
+  /* วันวันนี้ */
+  .fc-day-today .fc-daygrid-day-number {
+    color: var(--google-blue) !important;
+    font-weight: 600 !important;
   }
 
   .fc-daygrid-day-events {
@@ -288,6 +314,8 @@
     cursor: pointer !important;
     transition: var(--transition) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    height: auto !important;
+    min-height: 20px !important;
   }
 
   .fc-event:hover {
@@ -297,17 +325,77 @@
   }
 
   .fc-event-title {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+  }
+
+  .fc-daygrid-event {
+    margin-bottom: 1px !important;
+    margin-top: 1px !important;
+  }
+
+  /* เปลี่ยนพื้นหลังของส่วนหัววันที่ใน List View */
+  .fc-list-day {
+    background-color: #2e2e2e !important;
+    /* เทาเข้ม */
+    color: #000000 !important;
+    /* ตัวอักษรสีขาว */
+  }
+
+  /* ปรับตัวหนังสือของวันที่ให้เด่นขึ้น */
+  .fc-list-day-text,
+  .fc-list-day-side-text {
+    font-weight: 600 !important;
+    color: #000000 !important;
+  }
+
+
+
+  /* Tooltip hover fix */
+  .fc-popover {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-2) !important;
+  }
+
+  .fc-popover-header {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-color) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+  }
+
+  .fc-popover-body {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+  }
+
+  /* Dark theme tooltips */
+  [data-theme="dark"] .fc-popover {
+    background-color: var(--google-gray-800) !important;
+    color: #ffffff !important;
+    border-color: var(--google-gray-600) !important;
+  }
+
+  [data-theme="dark"] .fc-popover-header {
+    background-color: var(--google-gray-700) !important;
+    color: #ffffff !important;
+  }
+
+  [data-theme="dark"] .fc-popover-body {
+    background-color: var(--google-gray-800) !important;
+    color: #ffffff !important;
   }
 
   /* ========== THEME TOGGLE ========== */
   .theme-switch-wrapper {
-    display: none; /* ซ่อน toggle เดิม เพราะย้ายไปใน header แล้ว */
+    display: none;
+    /* ซ่อน toggle เดิม เพราะย้ายไปใน header แล้ว */
     position: fixed;
     top: 20px;
-    right: 300px; /* ให้ห่างจากขอบเพื่อไม่ให้ซ้อนกับปุ่มอื่น */
+    right: 300px;
+    /* ให้ห่างจากขอบเพื่อไม่ให้ซ้อนกับปุ่มอื่น */
     z-index: 1000;
   }
 
@@ -351,11 +439,11 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
-  input:checked + .slider {
+  input:checked+.slider {
     background-color: var(--google-blue);
   }
 
-  input:checked + .slider::before {
+  input:checked+.slider::before {
     transform: translateX(28px);
   }
 
@@ -379,11 +467,11 @@
     opacity: 0.3;
   }
 
-  input:checked + .slider .moon {
+  input:checked+.slider .moon {
     opacity: 1;
   }
 
-  input:checked + .slider .sun {
+  input:checked+.slider .sun {
     opacity: 0.3;
   }
 
@@ -392,14 +480,15 @@
     .sidebar {
       width: 240px;
     }
-    
+
     .main {
       margin-left: 240px;
       width: calc(100% - 240px);
     }
 
     .theme-switch-wrapper {
-      right: 20px; /* ปรับให้เหมาะสมกับหน้าจอขนาดกลาง */
+      right: 20px;
+      /* ปรับให้เหมาะสมกับหน้าจอขนาดกลาง */
     }
   }
 
@@ -465,7 +554,8 @@
 
     .theme-switch-wrapper {
       top: 12px;
-      right: 12px; /* กลับไปที่เดิมสำหรับมือถือ */
+      right: 12px;
+      /* กลับไปที่เดิมสำหรับมือถือ */
     }
   }
 
