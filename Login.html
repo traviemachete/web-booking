@@ -1,31 +1,28 @@
 <!-- Login.html -->
-<div class="container">
-  <h4 class="center-align">เข้าสู่ระบบ</h4>
+<div class="auth-box">
+  <h3>เข้าสู่ระบบ</h3>
   <form id="loginForm">
-    <label>อีเมล</label>
-    <input type="email" name="email" required>
-
-    <label>รหัสผ่าน</label>
-    <input type="password" name="password" required>
-
-    <div class="center-align" style="margin-top: 1rem;">
-      <button class="btn blue" type="submit">เข้าสู่ระบบ</button>
-    </div>
+    <input name="email" type="email" placeholder="Email" required />
+    <input name="pwd" type="password" placeholder="Password" required />
+    <button class="btn blue" type="submit">เข้าสู่ระบบ</button>
+    <p class="small">ยังไม่มีบัญชี? <a href="#" onclick="loadView('register')">ลงทะเบียน</a></p>
   </form>
 </div>
 
 <script>
-  document.getElementById('loginForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(this).entries());
-
-    google.script.run.withSuccessHandler(result => {
-      if (result.success) {
-        M.toast({ html: '✅ เข้าสู่ระบบสำเร็จ' });
-        loadView('calendar');
-      } else {
-        M.toast({ html: '❌ อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
-      }
-    }).loginUser(data);
-  });
+document.getElementById("loginForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const data = {
+    email: e.target.email.value.trim(),
+    pwd:   e.target.pwd.value.trim()
+  };
+  google.script.run
+    .withSuccessHandler(() => {
+      M.toast({html: '✅ เข้าสู่ระบบสำเร็จ'});
+      renderUserBox();
+      loadView('calendar');
+    })
+    .withFailureHandler(err => M.toast({html: err.message}))
+    .loginUser(data);
+});
 </script>
