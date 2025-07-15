@@ -17,7 +17,7 @@ document.getElementById("loginForm").addEventListener("submit", e => {
     pwd:   e.target.pwd.value.trim()
   };
   google.script.run
-    .withSuccessHandler(() => {
+    .withSuccessHandler(function(){ parent.M.toast({html:'✅ เข้าสู่ระบบ'}); parent.loadView('calendar'); parent.renderSidebarLinks && parent.renderSidebarLinks(); }) => {
       M.toast({html: '✅ เข้าสู่ระบบสำเร็จ'});
       renderUserBox();
       loadView('calendar');
