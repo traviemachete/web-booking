@@ -1,102 +1,71 @@
-
-<!-- Sidebar.html (hardened version) -->
-<div class="layout">
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="user-info" id="userInfo">
-      <!-- Filled by renderUserBox() -->
-    </div>
-
-    <ul class="menu"></ul>
-  </aside>
-
-  <!-- Main Content -->
-  <main class="main-content" id="mainContent">
-    <!-- เนื้อหาจะโหลดมาแสดงที่นี่ -->
-  </main>
+<!-- Sidebar.html (Google Style, Connected to main layout) -->
+<div class="sidebar">
+  <h5>Meeting Room</h5>
+  <div class="user-info" id="userInfo">
+    <!-- Filled by renderUserBox() -->
+  </div>
+  <ul class="menu"></ul>
 </div>
-
-<style>
-  :root {
-    --bg-color: #202124;
-    --text-color: #e8eaed;
-    --primary-color: #8ab4f8;
-    --hover-color: #3c4043;
-    --sidebar-bg: #202124;
-    --sidebar-hover: #3c4043;
-    --btn-login-bg: #8ab4f8;
-    --btn-login-text: #202124;
-    --radius: 8px;
-  }
-  .layout{display:flex;min-height:100vh;font-family:'Kanit',sans-serif;}
-  .sidebar{width:250px;background:var(--sidebar-bg);color:var(--text-color);padding:1rem;border-right:1px solid #3c4043;}
-  .user-info{text-align:center;margin-bottom:1.5rem;}
-  .user-info p{margin:0 0 10px 0;}
-  .btn{padding:6px 16px;border:none;border-radius:var(--radius);cursor:pointer;font-size:14px;transition:background .2s;}
-  .btn-primary{background:var(--btn-login-bg);color:var(--btn-login-text);}
-  .btn-primary:hover{background:#a4c6fa;}
-  .menu{list-style:none;padding:0;margin:0;}
-  .menu li{margin-bottom:10px;}
-  .menu a{display:block;padding:10px 14px;border-radius:var(--radius);color:var(--text-color);text-decoration:none;transition:background .2s;}
-  .menu a:hover{background:var(--hover-color);}
-  .main-content{flex-grow:1;padding:20px;background:var(--bg-color);}
-  @media(max-width:768px){
-    .layout{flex-direction:column;}
-    .sidebar{width:100%;display:flex;flex-direction:row;justify-content:space-around;align-items:center;padding:10px 20px;}
-    .menu{display:flex;gap:10px;}
-  }
-</style>
 
 <script>
 function renderUserBox(){
   google.script.run.withSuccessHandler(function(user){
-    const userBox=document.getElementById('userInfo');
-    const menu=document.querySelector('.menu');
-    if(!userBox||!menu) return;
+    const userBox = document.getElementById('userInfo');
+    const menu = document.querySelector('.menu');
+    if(!userBox || !menu) return;
 
-    // reset
-    userBox.innerHTML='';
-    menu.innerHTML='';
+    // Clear
+    userBox.innerHTML = '';
+    menu.innerHTML = '';
 
-    if(user){ // ------ Logged in ------
-      userBox.innerHTML=`
-        <p>👤 <strong>${user.name}</strong></p>
-        <button class="btn btn-primary" onclick="logout()">🚪 ออกจากระบบ</button>
+    if(user){ // Logged in
+      userBox.innerHTML = `
+        <p style="text-align:center">👤 <strong>${user.name}</strong></p>
+        <div style="text-align:center">
+          <button class="btn btn-primary" onclick="logout()">🚪 ออกจากระบบ</button>
+        </div>
       `;
       menu.insertAdjacentHTML('beforeend',`
-        <li><a href="#" onclick="loadView('calendar')">📅 หน้าหลัก</a></li>
-        <li><a href="#" onclick="ensureAuth(()=>loadView('form'))">📝 จองห้องประชุม</a></li>
+        <li><a href="#" onclick="loadView('calendar')">📅 ปฏิทิน</a></li>
+        <li><a href="#" onclick="ensureAuth(()=>loadView('form'))">📝 จองห้อง</a></li>
+        <li><a href="#" onclick="loadView('today')">📌 รายการวันนี้</a></li>
         <li><a href="#" onclick="loadView('mybookings')">📋 รายการของฉัน</a></li>
       `);
-      if(user.role==='admin'){
+      if(user.role === 'admin'){
         menu.insertAdjacentHTML('beforeend',`
-          <li><a href="#" onclick="loadView('admin')">🔧 ผู้ดูแลระบบ</a></li>
+          <li><a href="#" onclick="loadView('admin')">🔧 จัดการระบบ</a></li>
         `);
       }
-    } else { // ------ Guest ------
-      userBox.innerHTML=`
-        <p><strong>ยังไม่ได้เข้าสู่ระบบ</strong></p>
-        <button class="btn btn-primary" onclick="loadView('login')">🔑 เข้าสู่ระบบ</button>
+    } else { // Guest
+      userBox.innerHTML = `
+        <p style="text-align:center"><strong>ยังไม่ได้เข้าสู่ระบบ</strong></p>
+        <div style="text-align:center">
+          <button class="btn btn-primary" onclick="loadView('login')">🔑 เข้าสู่ระบบ</button>
+        </div>
       `;
       menu.insertAdjacentHTML('beforeend',`
-        <li><a href="#" onclick="loadView('calendar')">📅 หน้าหลัก</a></li>
+        <li><a href="#" onclick="loadView('calendar')">📅 ปฏิทิน</a></li>
       `);
     }
   }).getSessionUser();
 }
 
 function logout(){
-  google.script.run.withSuccessHandler(()=>{renderUserBox();loadView('calendar');}).logoutUser();
+  google.script.run.withSuccessHandler(()=>{
+    renderUserBox();
+    loadView('calendar');
+  }).logoutUser();
 }
 
 function ensureAuth(cb){
   google.script.run.withSuccessHandler(function(user){
-    if(user){cb();}else{
-      M.toast({html:'กรุณาเข้าสู่ระบบก่อนทำรายการ'});
+    if(user){ cb(); }
+    else {
+      M.toast({ html:'กรุณาเข้าสู่ระบบก่อนทำรายการ' });
       loadView('login');
     }
   }).getSessionUser();
 }
 
-window.addEventListener('DOMContentLoaded',renderUserBox);
+window.addEventListener('DOMContentLoaded', renderUserBox);
 </script>
