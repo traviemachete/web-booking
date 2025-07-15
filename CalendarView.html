@@ -9,7 +9,7 @@
       <button class="fc-button add-btn" onclick="loadView('form')" title="เพิ่มการจองใหม่">
         ➕ จองใหม่
       </button>
-      
+
       <!-- Theme Toggle ย้ายมาไว้ใน header -->
       <div class="theme-switch-wrapper-header">
         <label class="theme-switch">
@@ -50,6 +50,28 @@
 </div>
 
 <style>
+  .calendar-container {
+    padding: 24px;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-1);
+  }
+
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .calendar-header h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
   .calendar-actions {
     display: flex;
     gap: 8px;
@@ -63,17 +85,17 @@
     font-weight: 500 !important;
     cursor: pointer !important;
     transition: all 0.2s ease !important;
+    border: none;
   }
 
   .refresh-btn:hover, .add-btn:hover {
     transform: translateY(-1px) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: var(--shadow-2) !important;
   }
 
   .add-btn {
     background: var(--google-blue) !important;
     color: white !important;
-    border-color: var(--google-blue) !important;
   }
 
   .add-btn:hover {
@@ -234,63 +256,40 @@
   // Refresh calendar data
   function refreshCalendar() {
     if (typeof google !== 'undefined' && google.script && google.script.run) {
-      // Show loading state
       const refreshBtn = document.querySelector('.refresh-btn');
       const originalText = refreshBtn.innerHTML;
       refreshBtn.innerHTML = '⏳ กำลังโหลด...';
       refreshBtn.disabled = true;
 
-      // Call server function to get updated events
       google.script.run
         .withSuccessHandler(function(events) {
           if (window.calendar && typeof renderCalendar === 'function') {
             renderCalendar(events);
           }
-          
-          // Reset button
           refreshBtn.innerHTML = originalText;
           refreshBtn.disabled = false;
-          
-          // Show success message
           if (typeof Swal !== 'undefined') {
-            Swal.fire({
-              icon: 'success',
-              title: 'รีเฟรชสำเร็จ',
-              text: 'ข้อมูลปฏิทินได้รับการอัปเดตแล้ว',
-              timer: 1500,
-              showConfirmButton: false
-            });
+            Swal.fire({ icon: 'success', title: 'รีเฟรชสำเร็จ', text: 'ข้อมูลปฏิทินได้รับการอัปเดตแล้ว', timer: 1500, showConfirmButton: false });
           }
         })
         .withFailureHandler(function(error) {
           console.error('Failed to refresh calendar:', error);
-          
-          // Reset button
           refreshBtn.innerHTML = originalText;
           refreshBtn.disabled = false;
-          
-          // Show error message
           if (typeof Swal !== 'undefined') {
-            Swal.fire({
-              icon: 'error',
-              title: 'เกิดข้อผิดพลาด',
-              text: 'ไม่สามารถรีเฟรชข้อมูลได้ กรุณาลองใหม่อีกครั้ง'
-            });
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถรีเฟรชข้อมูลได้ กรุณาลองใหม่อีกครั้ง' });
           }
         })
         .listEvents();
     } else {
-      // Fallback for testing/development
-      console.log('Google Apps Script not available - using fallback refresh');
+      console.log('Google Apps Script not available - fallback');
       if (window.calendar && typeof renderCalendar === 'function') {
         renderCalendar([]);
       }
     }
   }
 
-  // Initialize theme toggle in header when view loads
   document.addEventListener('DOMContentLoaded', function() {
-    // Sync header toggle with main toggle
     const headerToggle = document.getElementById('themeToggleHeader');
     if (headerToggle) {
       const savedTheme = localStorage.getItem("booking-theme") || "light";
@@ -298,26 +297,23 @@
     }
   });
 
-  // Toggle theme function for header toggle
   function toggleTheme() {
     const headerToggle = document.getElementById('themeToggleHeader');
     const mainToggle = document.getElementById('themeToggle');
-    
+
     let newTheme;
     if (headerToggle && headerToggle.checked !== undefined) {
       newTheme = headerToggle.checked ? "dark" : "light";
     } else if (mainToggle && mainToggle.checked !== undefined) {
       newTheme = mainToggle.checked ? "dark" : "light";
     } else {
-      // Fallback to current theme
       const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
       newTheme = currentTheme === "dark" ? "light" : "dark";
     }
-    
+
     document.documentElement.setAttribute("data-theme", newTheme);
     localStorage.setItem("booking-theme", newTheme);
-    
-    // Sync both toggles
+
     if (headerToggle) headerToggle.checked = newTheme === "dark";
     if (mainToggle) mainToggle.checked = newTheme === "dark";
   }
