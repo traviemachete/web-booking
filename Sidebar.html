@@ -3,15 +3,13 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="user-info" id="userInfo">
-      <p class="not-logged"><strong>ยังไม่ได้เข้าสู่ระบบ</strong></p>
-      <button class="btn-login" onclick="login()">เข้าสู่ระบบ</button>
+      <!-- แสดงสถานะผู้ใช้ -->
+      <p class="not-logged"><strong>กำลังโหลด...</strong></p>
     </div>
 
     <ul class="menu">
       <li><a href="#" onclick="loadView('calendar')">📅 หน้าหลัก</a></li>
-      <li><a href="#" onclick="loadView('form')">📝 จองห้องประชุม</a></li>
-      
-
+      <li><a href="#" onclick="ensureAuth(() => loadView('form'))">📝 จองห้องประชุม</a></li>
     </ul>
   </aside>
 
@@ -104,7 +102,6 @@
     background-color: var(--bg-color);
   }
 
-  /* Responsive */
   @media screen and (max-width: 768px) {
     .layout {
       flex-direction: column;
@@ -132,17 +129,42 @@
 </style>
 
 <script>
-  function login() {
-    document.getElementById('userInfo').innerHTML = `
-      <p>👤 <strong>คุณธีรวัฐน์ ไอที</strong></p>
-      <button class="btn-login" onclick="logout()">🚪 ออกจากระบบ</button>
-    `;
+  // โหลดสถานะผู้ใช้
+  function renderUserBox() {
+    google.script.run.withSuccessHandler(user => {
+      const el = document.getElementById("userInfo");
+
+      if (user) {
+        el.innerHTML = `
+          <p>👤 <strong>${user.name}</strong></p>
+          <button class="btn-login" onclick="logout()">🚪 ออกจากระบบ</button>
+        `;
+      } else {
+        el.innerHTML = `
+          <p class="not-logged"><strong>ยังไม่ได้เข้าสู่ระบบ</strong></p>
+          <button class="btn-login" onclick="loadView('login')">เข้าสู่ระบบ</button>
+        `;
+      }
+    }).getSessionUser();
   }
 
   function logout() {
-    document.getElementById('userInfo').innerHTML = `
-      <p class="not-logged"><strong>ยังไม่ได้เข้าสู่ระบบ</strong></p>
-      <button class="btn-login" onclick="login()">เข้าสู่ระบบ</button>
-    `;
+    google.script.run.withSuccessHandler(() => {
+      renderUserBox();
+      loadView('calendar');
+    }).logoutUser();
   }
+
+  function ensureAuth(callback){
+    google.script.run.withSuccessHandler(user => {
+      if (user) {
+        callback();
+      } else {
+        M.toast({html: "กรุณาเข้าสู่ระบบก่อนจองห้องประชุม"});
+        loadView('login');
+      }
+    }).getSessionUser();
+  }
+
+  window.addEventListener("DOMContentLoaded", renderUserBox);
 </script>
