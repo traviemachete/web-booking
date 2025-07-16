@@ -1,35 +1,503 @@
-<div class="auth-box">
-  <h3>สมัครสมาชิก</h3>
-  <form id="registerForm">
-    <input name="name" type="text" placeholder="ชื่อ - สกุล" required />
-    <input name="email" type="email" placeholder="Email" required />
-    <input name="pwd" type="password" placeholder="รหัสผ่าน" required />
-    <input name="confirm" type="password" placeholder="ยืนยันรหัสผ่าน" required />
-    <button class="btn green" type="submit">สมัคร</button>
-    <p class="small"><a href="#" onclick="loadView('login')">กลับสู่หน้า Login</a></p>
-  </form>
+<!-- Register.html -->
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">
+        <span class="logo-icon">🏢</span>
+        <h2 class="logo-text">ระบบจองห้องประชุม</h2>
+      </div>
+      <h3 class="auth-title">สมัครสมาชิก</h3>
+      <p class="auth-subtitle">สร้างบัญชีเพื่อเข้าใช้งานระบบจองห้องประชุม</p>
+    </div>
+
+    <form id="registerForm" class="auth-form">
+      <div class="form-group">
+        <label for="registerName" class="form-label">ชื่อ - นามสกุล</label>
+        <input 
+          id="registerName"
+          name="name" 
+          type="text" 
+          class="form-input" 
+          placeholder="เช่น นายสมชาย ใจดี"
+          required 
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="registerEmail" class="form-label">อีเมล</label>
+        <input 
+          id="registerEmail"
+          name="email" 
+          type="email" 
+          class="form-input" 
+          placeholder="example@company.com"
+          required 
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="registerPassword" class="form-label">รหัสผ่าน</label>
+        <input 
+          id="registerPassword"
+          name="pwd" 
+          type="password" 
+          class="form-input" 
+          placeholder="กรอกรหัสผ่าน"
+          required 
+        />
+        <div class="form-help">รหัสผ่านควรมีความยาวอย่างน้อย 6 ตัวอักษร</div>
+      </div>
+
+      <div class="form-group">
+        <label for="registerConfirm" class="form-label">ยืนยันรหัสผ่าน</label>
+        <input 
+          id="registerConfirm"
+          name="confirm" 
+          type="password" 
+          class="form-input" 
+          placeholder="กรอกรหัสผ่านอีกครั้ง"
+          required 
+        />
+      </div>
+
+      <button type="submit" class="auth-btn primary" id="registerBtn">
+        <span class="btn-text">สร้างบัญชี</span>
+      </button>
+
+      <div class="auth-footer">
+        <p class="auth-link-text">
+          มีบัญชีแล้ว? 
+          <a href="#" onclick="loadView('login'); return false;" class="auth-link">เข้าสู่ระบบ</a>
+        </p>
+      </div>
+    </form>
+  </div>
 </div>
 
+<style>
+  .auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 100px);
+    padding: 20px;
+    background: var(--bg-secondary);
+  }
+
+  .auth-card {
+    background: var(--bg-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow-2);
+    padding: 0;
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+  }
+
+  .auth-header {
+    padding: 32px 32px 24px 32px;
+    text-align: center;
+    background: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .auth-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .logo-icon {
+    font-size: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--google-blue);
+    border-radius: 50%;
+    color: white;
+  }
+
+  .logo-text {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-color);
+    margin: 0;
+  }
+
+  .auth-title {
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--text-color);
+    margin: 0 0 8px 0;
+  }
+
+  .auth-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .auth-form {
+    padding: 32px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 8px;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 16px;
+    font-family: inherit;
+    transition: var(--transition);
+    box-sizing: border-box;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--google-blue);
+    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+  }
+
+  .form-input::placeholder {
+    color: var(--text-secondary);
+  }
+
+  .form-help {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  .form-input.error {
+    border-color: #ea4335;
+  }
+
+  .form-input.success {
+    border-color: #34a853;
+  }
+
+  .error-message {
+    color: #ea4335;
+    font-size: 12px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .auth-btn {
+    width: 100%;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .auth-btn.primary {
+    background: var(--google-blue);
+    color: white;
+  }
+
+  .auth-btn.primary:hover {
+    background: var(--google-blue-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-2);
+  }
+
+  .auth-btn.primary:active {
+    transform: translateY(0);
+  }
+
+  .auth-btn:disabled {
+    background: var(--google-gray-400);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .auth-btn.loading {
+    position: relative;
+    color: transparent;
+  }
+
+  .auth-btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .auth-footer {
+    text-align: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .auth-link-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .auth-link {
+    color: var(--google-blue);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+  }
+
+  .auth-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Dark theme adjustments */
+  [data-theme="dark"] .auth-btn.primary {
+    background: #8ab4f8;
+    color: var(--google-gray-900);
+  }
+
+  [data-theme="dark"] .auth-btn.primary:hover {
+    background: #aecbfa;
+  }
+
+  [data-theme="dark"] .form-input:focus {
+    border-color: #8ab4f8;
+    box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.1);
+  }
+
+  [data-theme="dark"] .auth-link {
+    color: #8ab4f8;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .auth-container {
+      padding: 16px;
+      align-items: flex-start;
+      padding-top: 40px;
+    }
+
+    .auth-card {
+      max-width: 100%;
+    }
+
+    .auth-header {
+      padding: 24px 24px 20px 24px;
+    }
+
+    .auth-form {
+      padding: 24px;
+    }
+
+    .logo-text {
+      font-size: 16px;
+    }
+
+    .auth-title {
+      font-size: 20px;
+    }
+
+    .form-input {
+      font-size: 16px; /* Prevent zoom on iOS */
+    }
+  }
+</style>
+
 <script>
-document.getElementById("registerForm").addEventListener("submit", e => {
+document.getElementById("registerForm").addEventListener("submit", function(e) {
   e.preventDefault();
-  const name  = e.target.name.value.trim();
+  
+  const btn = document.getElementById("registerBtn");
+  const originalText = btn.innerHTML;
+  
+  const name = e.target.name.value.trim();
   const email = e.target.email.value.trim();
-  const pwd   = e.target.pwd.value.trim();
+  const pwd = e.target.pwd.value.trim();
   const confirm = e.target.confirm.value.trim();
 
-  if (pwd !== confirm) {
-    M.toast({html: "❌ รหัสผ่านไม่ตรงกัน"});
+  // Client-side validation
+  if (!validateForm(name, email, pwd, confirm)) {
     return;
   }
 
-  google.script.run
-    .withSuccessHandler(() => {
-      M.toast({html: '✅ ลงทะเบียนเรียบร้อย'});
-      renderUserBox();
-      loadView('calendar');
-    })
-    .withFailureHandler(err => M.toast({html: err.message}))
-    .registerUser({name, email, pwd});
+  // Show loading state
+  btn.disabled = true;
+  btn.classList.add("loading");
+  btn.innerHTML = '<span class="btn-text">กำลังสร้างบัญชี...</span>';
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        btn.classList.remove("loading");
+        btn.innerHTML = originalText;
+        
+        // Show success message
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'success',
+            title: 'สร้างบัญชีสำเร็จ! 🎉',
+            text: 'ยินดีต้อนรับเข้าสู่ระบบจองห้องประชุม',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }
+        
+        // Update user info and redirect
+        if (typeof renderUserBox === 'function') {
+          renderUserBox();
+        }
+        setTimeout(() => {
+          loadView('calendar');
+        }, 1500);
+      })
+      .withFailureHandler(function(error) {
+        btn.disabled = false;
+        btn.classList.remove("loading");
+        btn.innerHTML = originalText;
+        
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'error',
+            title: 'สร้างบัญชีไม่สำเร็จ',
+            text: error.message || 'เกิดข้อผิดพลาดในการสร้างบัญชี'
+          });
+        }
+      })
+      .registerUser({name, email, pwd});
+  } else {
+    // Fallback for testing
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.remove("loading");
+      btn.innerHTML = originalText;
+      
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'info',
+          title: 'โหมดทดสอบ',
+          text: 'เชื่อมต่อกับ Google Apps Script เพื่อใช้งานจริง'
+        });
+      }
+    }, 1000);
+  }
+});
+
+function validateForm(name, email, pwd, confirm) {
+  let isValid = true;
+
+  // Clear previous errors
+  clearErrors();
+
+  // Name validation
+  if (!name || name.length < 2) {
+    showError('registerName', 'กรุณากรอกชื่อ-นามสกุล');
+    isValid = false;
+  }
+
+  // Email validation
+  if (!email || !isValidEmail(email)) {
+    showError('registerEmail', 'กรุณากรอกอีเมลที่ถูกต้อง');
+    isValid = false;
+  }
+
+  // Password validation
+  if (!pwd || pwd.length < 6) {
+    showError('registerPassword', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+    isValid = false;
+  }
+
+  // Confirm password validation
+  if (pwd !== confirm) {
+    showError('registerConfirm', 'รหัสผ่านไม่ตรงกัน');
+    isValid = false;
+  }
+
+  return isValid;
+}
+
+function showError(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  if (field) {
+    field.classList.add('error');
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.innerHTML = `⚠️ ${message}`;
+    field.parentNode.appendChild(errorDiv);
+  }
+}
+
+function clearErrors() {
+  const errorFields = document.querySelectorAll('.form-input.error');
+  errorFields.forEach(field => {
+    field.classList.remove('error', 'success');
+  });
+
+  const errorMessages = document.querySelectorAll('.error-message');
+  errorMessages.forEach(msg => msg.remove());
+}
+
+function isValidEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+// Real-time validation
+document.addEventListener('DOMContentLoaded', function() {
+  const inputs = document.querySelectorAll('.form-input');
+  
+  inputs.forEach(input => {
+    input.addEventListener('input', function() {
+      if (this.classList.contains('error')) {
+        this.classList.remove('error');
+        const errorMsg = this.parentNode.querySelector('.error-message');
+        if (errorMsg) errorMsg.remove();
+      }
+    });
+  });
+
+  // Auto-focus first input
+  const nameInput = document.getElementById('registerName');
+  if (nameInput) {
+    nameInput.focus();
+  }
 });
 </script>
