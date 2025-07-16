@@ -7,6 +7,143 @@
 let calendar = null;
 let currentView = 'calendar';
 let isLoading = false;
+let currentUser = null;
+let isAuthChecked = false;
+
+/* ========== AUTHENTICATION MANAGEMENT ========== */
+
+function checkAuthAndRenderUserBox() {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function(user) {
+        currentUser = user;
+        isAuthChecked = true;
+        renderUserBox(user);
+        console.log('👤 User status:', user ? `Logged in as ${user.name}` : 'Not logged in');
+      })
+      .withFailureHandler(function(error) {
+        console.error('❌ Auth check failed:', error);
+        currentUser = null;
+        isAuthChecked = true;
+        renderUserBox(null);
+      })
+      .getSessionUser();
+  } else {
+    // Fallback for testing
+    currentUser = null;
+    isAuthChecked = true;
+    renderUserBox(null);
+    console.log('⚠️ Google Apps Script not available');
+  }
+}
+
+function renderUserBox(user) {
+  const userInfoEl = document.getElementById("userInfo");
+  if (!userInfoEl) return;
+
+  if (user) {
+    userInfoEl.innerHTML = `
+      <div class="user-profile">
+        <div class="user-avatar">
+          <span class="avatar-icon">👤</span>
+        </div>
+        <div class="user-details">
+          <p class="user-name">${user.name}</p>
+          <p class="user-email">${user.email}</p>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">
+        <span>🚪</span> ออกจากระบบ
+      </button>
+    `;
+  } else {
+    userInfoEl.innerHTML = `
+      <div class="auth-prompt">
+        <p class="auth-text">ยังไม่ได้เข้าสู่ระบบ</p>
+        <button class="login-btn" onclick="loadView('login')">
+          <span>🔑</span> เข้าสู่ระบบ
+        </button>
+      </div>
+    `;
+  }
+}
+
+function logout() {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function() {
+        currentUser = null;
+        renderUserBox(null);
+        
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'success',
+            title: 'ออกจากระบบแล้ว',
+            text: 'ขอบคุณที่ใช้บริการ',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }
+        
+        // Redirect to calendar
+        setTimeout(() => {
+          loadView('calendar');
+        }, 1000);
+      })
+      .withFailureHandler(function(error) {
+        console.error('Logout failed:', error);
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถออกจากระบบได้'
+          });
+        }
+      })
+      .logoutUser();
+  } else {
+    // Fallback for testing
+    currentUser = null;
+    renderUserBox(null);
+    loadView('calendar');
+  }
+}
+
+function checkAuthAndNavigate(viewName) {
+  if (!isAuthChecked) {
+    // Wait for auth check
+    setTimeout(() => checkAuthAndNavigate(viewName), 200);
+    return;
+  }
+
+  if (currentUser) {
+    // User is logged in, proceed to view
+    loadView(viewName);
+  } else {
+    // User not logged in, show login prompt
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'info',
+        title: 'จำเป็นต้องเข้าสู่ระบบ',
+        text: 'กรุณาเข้าสู่ระบบเพื่อทำการจองห้องประชุม',
+        showCancelButton: true,
+        confirmButtonText: 'เข้าสู่ระบบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#1a73e8',
+        cancelButtonColor: '#6c757d'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          loadView('login');
+        }
+      });
+    } else {
+      // Fallback without SweetAlert
+      if (confirm('กรุณาเข้าสู่ระบบเพื่อทำการจองห้องประชุม')) {
+        loadView('login');
+      }
+    }
+  }
+}
 
 /* ========== CALENDAR MANAGEMENT ========== */
 
@@ -31,12 +168,13 @@ function renderCalendar(events = []) {
     locale: 'th',
     firstDay: 0, // Sunday
     
-     /* บังคับรูปแบบเวลาให้มีนาทีเสมอ */
+    // Time format
     eventTimeFormat: {
-      hour:   '2-digit',
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false      // 24 ชม.  →  “10:00”
+      hour12: false
     },
+    
     // Header toolbar configuration
     headerToolbar: {
       left: 'prev,next today',
@@ -53,16 +191,6 @@ function renderCalendar(events = []) {
       list: 'รายการ'
     },
     
-    // Custom buttons
-    customButtons: {
-      refreshBtn: {
-        text: '🔄 รีเฟรช',
-        click: function() {
-          refreshCalendarData();
-        }
-      }
-    },
-    
     // Events configuration
     events: events || [],
     eventDisplay: 'block',
@@ -75,15 +203,24 @@ function renderCalendar(events = []) {
     },
     
     dateClick: function(info) {
-      // Quick booking: pre-fill form with selected date
-      const selectedDate = info.dateStr;
-      document.getElementById('date').value = selectedDate;
-      loadView('form');
+      // Quick booking: check auth first
+      if (!isAuthChecked) {
+        setTimeout(() => calendar.getApi().trigger('dateClick', info), 200);
+        return;
+      }
+      
+      if (currentUser) {
+        // Pre-fill form with selected date
+        const selectedDate = info.dateStr;
+        localStorage.setItem('selectedDate', selectedDate);
+        loadView('form');
+      } else {
+        checkAuthAndNavigate('form');
+      }
     },
     
     // Event styling
     eventDidMount: function(info) {
-      // Add tooltip or additional styling
       info.el.setAttribute('title', `${info.event.title}\nคลิกเพื่อดูรายละเอียด`);
     },
     
@@ -94,7 +231,6 @@ function renderCalendar(events = []) {
     
     // View change handling
     datesSet: function(info) {
-      // Update view state when calendar view changes
       currentView = info.view.type;
     }
   });
@@ -102,7 +238,7 @@ function renderCalendar(events = []) {
   // Render the calendar
   calendar.render();
   
-  console.log(`Calendar rendered with ${events.length} events`);
+  console.log(`📅 Calendar rendered with ${events.length} events`);
 }
 
 function showEventDetails(event) {
@@ -122,35 +258,37 @@ function showEventDetails(event) {
     day: 'numeric'
   }) : 'ไม่ระบุ';
 
-  Swal.fire({
-    title: '📋 รายละเอียดการจอง',
-    html: `
-      <div style="text-align: left; margin: 16px 0; line-height: 1.6;">
-        <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-          <h4 style="margin: 0 0 8px 0; color: var(--text-color);">${event.title}</h4>
-          <p style="margin: 4px 0; color: var(--text-secondary);"><strong>📅 วันที่:</strong> ${eventDate}</p>
-          <p style="margin: 4px 0; color: var(--text-secondary);"><strong>⏰ เวลา:</strong> ${startTime} - ${endTime}</p>
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      title: '📋 รายละเอียดการจอง',
+      html: `
+        <div style="text-align: left; margin: 16px 0; line-height: 1.6;">
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+            <h4 style="margin: 0 0 8px 0; color: var(--text-color);">${event.title}</h4>
+            <p style="margin: 4px 0; color: var(--text-secondary);"><strong>📅 วันที่:</strong> ${eventDate}</p>
+            <p style="margin: 4px 0; color: var(--text-secondary);"><strong>⏰ เวลา:</strong> ${startTime} - ${endTime}</p>
+          </div>
+          <p style="margin: 8px 0;"><strong>👤 ผู้จอง:</strong> ${props.booker || 'ไม่ระบุ'}</p>
+          <p style="margin: 8px 0;"><strong>🏢 ฝ่าย:</strong> ${props.department || 'ไม่ระบุ'}</p>
+          <p style="margin: 8px 0;"><strong>🏛️ บริษัท:</strong> ${props.company || 'ไม่ระบุ'}</p>
+          <p style="margin: 8px 0;"><strong>🎯 วัตถุประสงค์:</strong> ${props.purpose || 'ไม่ระบุ'}</p>
+          <p style="margin: 8px 0;"><strong>📧 อีเมล:</strong> ${props.email || 'ไม่ระบุ'}</p>
+          <p style="margin: 8px 0;"><strong>📊 สถานะ:</strong> ${props.status || 'ปกติ'}</p>
         </div>
-        <p style="margin: 8px 0;"><strong>👤 ผู้จอง:</strong> ${props.booker || 'ไม่ระบุ'}</p>
-        <p style="margin: 8px 0;"><strong>🏢 ฝ่าย:</strong> ${props.department || 'ไม่ระบุ'}</p>
-        <p style="margin: 8px 0;"><strong>🏛️ บริษัท:</strong> ${props.company || 'ไม่ระบุ'}</p>
-        <p style="margin: 8px 0;"><strong>🎯 วัตถุประสงค์:</strong> ${props.purpose || 'ไม่ระบุ'}</p>
-        <p style="margin: 8px 0;"><strong>📧 อีเมล:</strong> ${props.email || 'ไม่ระบุ'}</p>
-        <p style="margin: 8px 0;"><strong>📊 สถานะ:</strong> ${props.status || 'ปกติ'}</p>
-      </div>
-    `,
-    showCancelButton: true,
-    confirmButtonText: '✏️ แก้ไข',
-    cancelButtonText: '❌ ปิด',
-    confirmButtonColor: '#1a73e8',
-    cancelButtonColor: '#6c757d',
-    width: '500px'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      // TODO: Implement edit functionality
-      editBooking(event.id, props);
-    }
-  });
+      `,
+      showCancelButton: true,
+      confirmButtonText: '✏️ แก้ไข',
+      cancelButtonText: '❌ ปิด',
+      confirmButtonColor: '#1a73e8',
+      cancelButtonColor: '#6c757d',
+      width: '500px'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // TODO: Implement edit functionality
+        editBooking(event.id, props);
+      }
+    });
+  }
 }
 
 function refreshCalendarData() {
@@ -162,23 +300,27 @@ function refreshCalendarData() {
         renderCalendar(events);
         toggleLoadingState(false);
         
-        Swal.fire({
-          icon: 'success',
-          title: 'รีเฟรชสำเร็จ',
-          text: `อัปเดตข้อมูลแล้ว ${events.length} รายการ`,
-          timer: 1500,
-          showConfirmButton: false
-        });
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'success',
+            title: 'รีเฟรชสำเร็จ',
+            text: `อัปเดตข้อมูลแล้ว ${events.length} รายการ`,
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }
       })
       .withFailureHandler(function(error) {
         console.error('Calendar refresh failed:', error);
         toggleLoadingState(false);
         
-        Swal.fire({
-          icon: 'error',
-          title: 'เกิดข้อผิดพลาด',
-          text: 'ไม่สามารถรีเฟรชข้อมูลได้'
-        });
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถรีเฟรชข้อมูลได้'
+          });
+        }
       })
       .listEvents();
   }
@@ -225,27 +367,37 @@ function handleSubmit(event) {
         submitBtn.innerHTML = originalText;
         
         if (result.status === 'ok') {
-          Swal.fire({
-            icon: 'success',
-            title: 'จองสำเร็จ! 🎉',
-            text: 'ระบบได้บันทึกการจองเรียบร้อยแล้ว',
-            timer: 2000,
-            showConfirmButton: false
-          }).then(() => {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              icon: 'success',
+              title: 'จองสำเร็จ! 🎉',
+              text: 'ระบบได้บันทึกการจองเรียบร้อยแล้ว',
+              timer: 2000,
+              showConfirmButton: false
+            }).then(() => {
+              form.reset();
+              loadView('calendar', true);
+            });
+          } else {
+            alert('จองสำเร็จ!');
             form.reset();
             loadView('calendar', true);
-          });
+          }
         }
       })
       .withFailureHandler(function(error) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
         
-        Swal.fire({
-          icon: 'error',
-          title: 'เกิดข้อผิดพลาด',
-          text: error.message || 'ไม่สามารถบันทึกการจองได้'
-        });
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: error.message || 'ไม่สามารถบันทึกการจองได้'
+          });
+        } else {
+          alert('เกิดข้อผิดพลาด: ' + (error.message || 'ไม่สามารถบันทึกการจองได้'));
+        }
       })
       .submitBooking(bookingData);
   } else {
@@ -254,11 +406,15 @@ function handleSubmit(event) {
       submitBtn.disabled = false;
       submitBtn.innerHTML = originalText;
       
-      Swal.fire({
-        icon: 'info',
-        title: 'โหมดทดสอบ',
-        text: 'การจองจะถูกบันทึกเมื่อเชื่อมต่อกับ Google Apps Script'
-      });
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'info',
+          title: 'โหมดทดสอบ',
+          text: 'การจองจะถูกบันทึกเมื่อเชื่อมต่อกับ Google Apps Script'
+        });
+      } else {
+        alert('โหมดทดสอบ: การจองจะถูกบันทึกเมื่อเชื่อมต่อกับ Google Apps Script');
+      }
     }, 1000);
   }
 }
@@ -266,21 +422,29 @@ function handleSubmit(event) {
 function validateBookingData(data) {
   // Check required fields
   if (!data.date || !data.start || !data.end || !data.name) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'ข้อมูลไม่ครบถ้วน',
-      text: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน'
-    });
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลไม่ครบถ้วน',
+        text: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน'
+      });
+    } else {
+      alert('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน');
+    }
     return false;
   }
 
   // Validate time range
   if (data.start >= data.end) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'เวลาไม่ถูกต้อง',
-      text: 'เวลาเริ่มต้องมาก่อนเวลาสิ้นสุด'
-    });
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'เวลาไม่ถูกต้อง',
+        text: 'เวลาเริ่มต้องมาก่อนเวลาสิ้นสุด'
+      });
+    } else {
+      alert('เวลาเริ่มต้องมาก่อนเวลาสิ้นสุด');
+    }
     return false;
   }
 
@@ -290,21 +454,29 @@ function validateBookingData(data) {
   today.setHours(0, 0, 0, 0);
   
   if (bookingDate < today) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'วันที่ไม่ถูกต้อง',
-      text: 'ไม่สามารถจองย้อนหลังได้'
-    });
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'วันที่ไม่ถูกต้อง',
+        text: 'ไม่สามารถจองย้อนหลังได้'
+      });
+    } else {
+      alert('ไม่สามารถจองย้อนหลังได้');
+    }
     return false;
   }
 
   // Validate email format if provided
   if (data.email && !isValidEmail(data.email)) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'รูปแบบอีเมลไม่ถูกต้อง',
-      text: 'กรุณากรอกอีเมลในรูปแบบที่ถูกต้อง'
-    });
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'รูปแบบอีเมลไม่ถูกต้อง',
+        text: 'กรุณากรอกอีเมลในรูปแบบที่ถูกต้อง'
+      });
+    } else {
+      alert('กรุณากรอกอีเมลในรูปแบบที่ถูกต้อง');
+    }
     return false;
   }
 
@@ -327,12 +499,26 @@ function loadView(viewName, forceRefresh = false) {
   // Update navigation active state
   setActiveNav(viewName);
   
+  // Show loading state
+  if (!forceRefresh) {
+    mainContent.innerHTML = `
+      <div class="loading-placeholder">
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <h3>🔄 กำลังโหลด...</h3>
+          <p>กรุณารอสักครู่</p>
+        </div>
+      </div>
+    `;
+  }
+  
   // View mapping
   const viewMap = {
     calendar: 'CalendarView',
     form: 'Form',
     list: 'TodayList',
-    login: 'Login'
+    login: 'Login',
+    register: 'Register'
   };
 
   const templateName = viewMap[viewName] || 'CalendarView';
@@ -351,12 +537,14 @@ function loadView(viewName, forceRefresh = false) {
       .withFailureHandler(function(error) {
         console.error('Failed to load view:', error);
         mainContent.innerHTML = `
-          <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-            <h3>⚠️ เกิดข้อผิดพลาด</h3>
-            <p>ไม่สามารถโหลดหน้านี้ได้ กรุณาลองใหม่อีกครั้ง</p>
-            <button onclick="loadView('calendar')" style="margin-top: 16px; padding: 8px 16px; background: var(--google-blue); color: white; border: none; border-radius: 4px; cursor: pointer;">
-              กลับสู่หน้าหลัก
-            </button>
+          <div class="error-container">
+            <div class="error-content">
+              <h3>⚠️ เกิดข้อผิดพลาด</h3>
+              <p>ไม่สามารถโหลดหน้านี้ได้ กรุณาลองใหม่อีกครั้ง</p>
+              <button onclick="loadView('${viewName}')" class="retry-btn">
+                🔄 ลองใหม่
+              </button>
+            </div>
           </div>
         `;
         isLoading = false;
@@ -394,17 +582,34 @@ function handleViewLoaded(viewName) {
     case 'list':
       loadBookingList();
       break;
+      
+    case 'login':
+    case 'register':
+      // Auth views don't need special handling
+      break;
+  }
+  
+  // Sync theme toggle in header if exists
+  const headerToggle = document.getElementById('themeToggleHeader');
+  if (headerToggle) {
+    const savedTheme = localStorage.getItem("booking-theme") || "light";
+    headerToggle.checked = savedTheme === "dark";
   }
 }
 
 function setupFormDefaults() {
-  // Set default date to today
+  // Set default date to today or selected date
   const today = new Date().toISOString().split('T')[0];
+  const selectedDate = localStorage.getItem('selectedDate') || today;
+  
   const dateInput = document.getElementById('date');
   if (dateInput) {
-    dateInput.value = today;
+    dateInput.value = selectedDate;
     dateInput.setAttribute('min', today); // Prevent past dates
   }
+  
+  // Clear selected date from localStorage
+  localStorage.removeItem('selectedDate');
 
   // Set default time range (9:00 AM - 10:00 AM)
   const startInput = document.getElementById('start');
@@ -422,12 +627,27 @@ function loadBookingList() {
   const listContainer = document.getElementById('booking-list');
   if (listContainer) {
     listContainer.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+      <div class="text-center" style="padding: 40px; color: var(--text-secondary);">
         <h3>📋 รายการจองทั้งหมด</h3>
         <p>ฟีเจอร์นี้อยู่ระหว่างการพัฒนา</p>
       </div>
     `;
   }
+}
+
+function setActiveNav(viewName) {
+  // Remove active class from all nav items
+  document.querySelectorAll('.nav-menu a').forEach(link => {
+    link.classList.remove('active');
+  });
+  
+  // Add active class to current nav item
+  const activeNav = document.getElementById(`nav-${viewName}`);
+  if (activeNav) {
+    activeNav.classList.add('active');
+  }
+  
+  console.log('📍 Navigation set to:', viewName);
 }
 
 /* ========== UTILITY FUNCTIONS ========== */
@@ -447,11 +667,15 @@ function toggleLoadingState(loading) {
 
 function editBooking(eventId, eventData) {
   // TODO: Implement edit booking functionality
-  Swal.fire({
-    icon: 'info',
-    title: 'ฟีเจอร์การแก้ไข',
-    text: 'ฟีเจอร์การแก้ไขการจองอยู่ระหว่างการพัฒนา'
-  });
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      icon: 'info',
+      title: 'ฟีเจอร์การแก้ไข',
+      text: 'ฟีเจอร์การแก้ไขการจองอยู่ระหว่างการพัฒนา'
+    });
+  } else {
+    alert('ฟีเจอร์การแก้ไขการจองอยู่ระหว่างการพัฒนา');
+  }
 }
 
 function getFallbackContent(viewName) {
@@ -460,20 +684,38 @@ function getFallbackContent(viewName) {
       <div class="calendar-container">
         <div class="calendar-header">
           <h4>📅 ปฏิทินการใช้ห้องประชุม</h4>
+          <div class="calendar-actions">
+            <button class="refresh-btn" onclick="refreshCalendarData()">🔄 รีเฟรช</button>
+            <button class="add-btn" onclick="checkAuthAndNavigate('form')">➕ จองใหม่</button>
+          </div>
         </div>
         <div id="calendar"></div>
       </div>
     `,
     form: `
-      <div style="max-width: 600px; margin: 0 auto; background: var(--bg-color); padding: 32px; border-radius: 8px;">
-        <h3 style="text-align: center; margin-bottom: 24px;">📝 แบบฟอร์มจองห้องประชุม</h3>
-        <p style="text-align: center; color: var(--text-secondary);">กรุณาเชื่อมต่อกับ Google Apps Script เพื่อใช้งานฟอร์ม</p>
+      <div class="form-container">
+        <div class="form-header">
+          <h3>📝 แบบฟอร์มจองห้องประชุม</h3>
+          <p>กรุณาเชื่อมต่อกับ Google Apps Script เพื่อใช้งานฟอร์ม</p>
+        </div>
       </div>
     `,
     list: `
-      <div style="max-width: 800px; margin: 0 auto; background: var(--bg-color); padding: 32px; border-radius: 8px;">
-        <h3 style="text-align: center; margin-bottom: 24px;">📋 รายการจองทั้งหมด</h3>
-        <p style="text-align: center; color: var(--text-secondary);">กรุณาเชื่อมต่อกับ Google Apps Script เพื่อดูรายการจอง</p>
+      <div class="text-center" style="padding: 40px; color: var(--text-secondary);">
+        <h3>📋 รายการจองทั้งหมด</h3>
+        <p>กรุณาเชื่อมต่อกับ Google Apps Script เพื่อดูรายการจอง</p>
+      </div>
+    `,
+    login: `
+      <div class="text-center" style="padding: 40px; color: var(--text-secondary);">
+        <h3>🔑 เข้าสู่ระบบ</h3>
+        <p>กรุณาเชื่อมต่อกับ Google Apps Script เพื่อใช้งานระบบ</p>
+      </div>
+    `,
+    register: `
+      <div class="text-center" style="padding: 40px; color: var(--text-secondary);">
+        <h3>📝 สมัครสมาชิก</h3>
+        <p>กรุณาเชื่อมต่อกับ Google Apps Script เพื่อใช้งานระบบ</p>
       </div>
     `
   };
@@ -486,7 +728,7 @@ function getSampleEvents() {
   return [
     {
       id: 'sample-1',
-      title: 'ประชุมทีม IT (สมชาย)',
+      title: 'ประชุมทีม IT',
       start: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 9, 0),
       end: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 11, 0),
       backgroundColor: '#1a73e8',
@@ -500,7 +742,7 @@ function getSampleEvents() {
     },
     {
       id: 'sample-2',
-      title: 'อบรมพนักงานใหม่ (สุดา)',
+      title: 'อบรมพนักงานใหม่',
       start: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, 13, 0),
       end: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, 16, 0),
       backgroundColor: '#34a853',
@@ -515,34 +757,79 @@ function getSampleEvents() {
   ];
 }
 
-// Funtion Auth
-function ensureAuth(callback){
-  google.script.run.withSuccessHandler(user => {
-    if (user) {
-      callback();
-    } else {
-      M.toast({html: "กรุณาเข้าสู่ระบบก่อนใช้งาน"});
-      loadView('login');
-    }
-  }).getSessionUser();
-}
+/* ========== REFRESH CALENDAR ========== */
 
+function refreshCalendar() {
+  console.log('🔄 Refreshing calendar from server...');
+  
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    const refreshBtn = document.querySelector('.refresh-btn');
+    if (refreshBtn) {
+      const originalText = refreshBtn.innerHTML;
+      refreshBtn.innerHTML = '⏳ กำลังโหลด...';
+      refreshBtn.disabled = true;
+      
+      google.script.run
+        .withSuccessHandler(function(events) {
+          if (typeof renderCalendar === 'function') {
+            renderCalendar(events);
+          }
+          
+          // Reset button
+          refreshBtn.innerHTML = originalText;
+          refreshBtn.disabled = false;
+          
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              icon: 'success',
+              title: 'รีเฟรชสำเร็จ',
+              text: 'ข้อมูลปฏิทินได้รับการอัปเดตแล้ว',
+              timer: 1500,
+              showConfirmButton: false
+            });
+          }
+          
+          console.log('✅ Calendar refreshed successfully');
+        })
+        .withFailureHandler(function(error) {
+          console.error('❌ Failed to refresh calendar:', error);
+          
+          // Reset button
+          refreshBtn.innerHTML = originalText;
+          refreshBtn.disabled = false;
+          
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              icon: 'error',
+              title: 'เกิดข้อผิดพลาด',
+              text: 'ไม่สามารถรีเฟรชข้อมูลได้ กรุณาลองใหม่อีกครั้ง'
+            });
+          }
+        })
+        .listEvents();
+    }
+  } else {
+    console.error('❌ Google Apps Script not available');
+  }
+}
 
 /* ========== INITIALIZATION ========== */
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('Meeting Room Booking System - JavaScript loaded');
+  console.log('🚀 Meeting Room Booking System - JavaScript loaded');
   
   // Set up global error handling
   window.addEventListener('error', function(e) {
-    console.error('Global error:', e.error);
+    console.error('💥 Global error:', e.error);
   });
   
-  // Initialize theme if not already done
-  if (typeof initializeTheme === 'function') {
-    initializeTheme();
-  }
+  // Initialize theme
+  const savedTheme = localStorage.getItem("booking-theme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+  
+  // Check authentication
+  checkAuthAndRenderUserBox();
 });
 
 // Export functions for global access
@@ -550,4 +837,10 @@ window.renderCalendar = renderCalendar;
 window.handleSubmit = handleSubmit;
 window.loadView = loadView;
 window.refreshCalendarData = refreshCalendarData;
+window.refreshCalendar = refreshCalendar;
+window.checkAuthAndNavigate = checkAuthAndNavigate;
+window.renderUserBox = renderUserBox;
+window.logout = logout;
+window.currentUser = currentUser;
+window.isAuthChecked = isAuthChecked;
 </script>
