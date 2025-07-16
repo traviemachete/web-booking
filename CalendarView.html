@@ -298,27 +298,31 @@
     }
   });
 
-  // Toggle theme function for header toggle
+  // Toggle theme function
   function toggleTheme() {
     const headerToggle = document.getElementById('themeToggleHeader');
-    const mainToggle = document.getElementById('themeToggle');
     
     let newTheme;
     if (headerToggle && headerToggle.checked !== undefined) {
       newTheme = headerToggle.checked ? "dark" : "light";
-    } else if (mainToggle && mainToggle.checked !== undefined) {
-      newTheme = mainToggle.checked ? "dark" : "light";
     } else {
       // Fallback to current theme
       const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
       newTheme = currentTheme === "dark" ? "light" : "dark";
     }
     
+    // Apply theme
     document.documentElement.setAttribute("data-theme", newTheme);
     localStorage.setItem("booking-theme", newTheme);
     
-    // Sync both toggles
-    if (headerToggle) headerToggle.checked = newTheme === "dark";
-    if (mainToggle) mainToggle.checked = newTheme === "dark";
+    // Update global toggle function if exists
+    if (typeof window.toggleTheme === 'function' && window.toggleTheme !== toggleTheme) {
+      window.toggleTheme = toggleTheme;
+    }
+    
+    console.log('🎨 Theme changed to:', newTheme);
   }
+
+  // Initialize when this view loads
+  setTimeout(initializeThemeToggle, 100);
 </script>
