@@ -1,16 +1,14 @@
 /*  ===============================
-    Google Apps Script ‑ Back‑end
-    Version: Hardened v3
-    • ป้องกัน spoof ข้อมูลผู้จอง
-    • ใช้ salted password hash
-    • Session timeout 12 ชั่วโมง
+    Google Apps Script ‑ Back‑end
+    v2  (14 Jul 2025)
+    • แก้บั๊กเวลาไม่แสดงบน FullCalendar (ส่ง ISO‑string)
+    • ป้องกันช่องเวลาซ้ำ + โยน error กลับฝั่ง UI
+    • เพิ่ม log ช่วยดีบั๊ก (testListEvents)
     =============================== */
 
 /* ------------ CONST ------------ */
-const SHEET_NAME   = 'Sheet1';
-const USER_SHEET   = 'Users';
-const TZ           = 'Asia/Bangkok';
-const SESSION_TTL  = 12 * 3600 * 1000; // 12 ชั่วโมง
+const SHEET_NAME = 'Sheet1';
+const TZ = 'Asia/Bangkok';
 
 /* -------------------------------------------------- */
 /*  WEB‑APP ENTRY                                     */
@@ -27,7 +25,7 @@ function include(name) {
 }
 
 /* -------------------------------------------------- */
-/*  CALENDAR API                                      */
+/*  CALENDAR API  (→ FullCalendar)                    */
 /* -------------------------------------------------- */
 function listEvents() {
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
@@ -36,13 +34,14 @@ function listEvents() {
 
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
-    const [id, date, startT, endT, name, department, company, purpose, email, timestamp, status] = r;
+    const [id, date, startT, endT, name, department, company, purpose, email, timestamp, status] =
+      [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10]];
 
     const startObj = mergeDateTime(date, startT);
     const endObj = mergeDateTime(date, endT);
-    if (!startObj || !endObj) continue;
+    if (!startObj || !endObj) continue;            // skip broken rows
 
-    const start = startObj.toISOString();
+    const start = startObj.toISOString();          // ← FullCalendar expects ISO string
     const end = endObj.toISOString();
 
     const stat = String(status || '').toLowerCase();
@@ -66,21 +65,18 @@ function listEvents() {
       }
     });
   }
-  return events;
+  return events;               // usable by google.script.run
 }
 
 /* -------------------------------------------------- */
-/*  BOOKING API                                       */
+/*  BOOKING API                                       */
 /* -------------------------------------------------- */
 function submitBooking(data) {
-  const sess = getSessionUser();
-  if (!sess) throw new Error('401 Unauthorized');
-
   const clash = isDuplicate(data.date, data.start, data.end);
   if (clash.dup) throw new Error(clash.msg);
 
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
-  const id = sh.getLastRow() + 1;
+  const id = sh.getLastRow();
   const now = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy, HH:mm:ss');
 
   sh.appendRow([
@@ -88,11 +84,11 @@ function submitBooking(data) {
     data.date,
     data.start,
     data.end,
-    sess.name,         // ป้องกัน spoof
+    data.name,
     data.department,
     data.company,
     data.purpose,
-    sess.email,
+    data.email,
     now,
     ''
   ]);
@@ -100,7 +96,7 @@ function submitBooking(data) {
 }
 
 /* -------------------------------------------------- */
-/*  DUPLICATE CHECK                                   */
+/*  DUPLICATE CHECK                                   */
 /* -------------------------------------------------- */
 function isDuplicate(dateISO, tStart, tEnd) {
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
@@ -133,13 +129,11 @@ function isDuplicate(dateISO, tStart, tEnd) {
 function padTime(t) {
   if (t instanceof Date) return t.toTimeString().slice(0, 5);
   if (typeof t === 'number') {
-    const mins = Math.round(t * 1440);
-    return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+    const mins = Math.round(t * 1440); return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
   }
   const s = String(t).trim();
   if (s.includes(':')) {
-    const [h, m = '00'] = s.split(':');
-    return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+    const [h, m = '00'] = s.split(':'); return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
   }
   return `${s.padStart(2, '0')}:00`;
 }
@@ -155,7 +149,7 @@ function mergeDateTime(dateVal, timeVal) {
   if (isNaN(dObj)) return null;
   const [h, m] = padTime(timeVal).split(':').map(Number);
   dObj.setHours(h, m, 0, 0);
-  return dObj;
+  return dObj;                   //  ← คืน Date object (ไป toISOString ภายหลัง)
 }
 function parseDDMMYYYY(s) {
   const [dd, mm, yy] = String(s).split('/');
@@ -173,14 +167,17 @@ function convertTimestamp(ts) {
   return Utilities.formatDate(d, TZ, "yyyy-MM-dd'T'HH:mm:ss");
 }
 
-/* -------------------------------------------------- */
-/*  AUTH SYSTEM                                       */
-/* -------------------------------------------------- */
+/* ========== AUTH CONFIG ========== */
+const USER_SHEET = 'Users';
+
+/* แปลง plain password → hash (SHA-256 → base64) */
 function hash(pwd) {
   return Utilities.base64Encode(
     Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, pwd)
   );
 }
+
+/* ดึงข้อมูลผู้ใช้จาก email */
 function findUser(email) {
   const sh = SpreadsheetApp.getActive().getSheetByName(USER_SHEET);
   const data = sh.getDataRange().getValues();
@@ -200,60 +197,57 @@ function findUser(email) {
   return null;
 }
 
+/* เข้าสู่ระบบ */
 function loginUser(obj) {
   const u = findUser(obj.email);
   if (!u) throw new Error('ไม่พบบัญชีนี้ในระบบ');
-  if (u.hash !== hash(obj.pwd + obj.email)) throw new Error('รหัสผ่านไม่ถูกต้อง');
+  if (u.hash !== hash(obj.pwd)) throw new Error('รหัสผ่านไม่ถูกต้อง');
 
   const prop = PropertiesService.getUserProperties();
-  prop.setProperties({
-    email: u.email,
-    name : u.name,
-    role : u.role,
-    loginAt: Date.now().toString()
-  });
+  prop.setProperty('email', u.email);
+  prop.setProperty('name', u.name);
+  prop.setProperty('role', u.role);
   return { ok: true };
 }
 
+/* สมัครผู้ใช้ใหม่ */
 function registerUser(obj) {
   const u = findUser(obj.email);
   if (u) throw new Error('อีเมลนี้มีอยู่ในระบบแล้ว');
 
-  const sh  = SpreadsheetApp.getActive().getSheetByName(USER_SHEET);
-  const id  = sh.getLastRow() + 1;
+  const sh = SpreadsheetApp.getActive().getSheetByName(USER_SHEET);
+  const id = sh.getLastRow(); // ใช้ row เป็น id (auto increment)
   const now = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy, HH:mm:ss');
 
   sh.appendRow([
     id,
     obj.name,
     obj.email,
-    hash(obj.pwd + obj.email),
-    'user',
+    hash(obj.pwd),
+    'user',   // default role
     now
   ]);
 
-  return loginUser(obj);
+  return loginUser(obj); // auto login after register
 }
 
+/* ดึง session ปัจจุบัน */
 function getSessionUser() {
   const prop = PropertiesService.getUserProperties();
-  const email   = prop.getProperty('email');
-  const name    = prop.getProperty('name');
-  const role    = prop.getProperty('role');
-  const loginAt = +prop.getProperty('loginAt') || 0;
-
-  if (!email || Date.now() - loginAt > SESSION_TTL) {
-    logoutUser();
-    return null;
-  }
-  return { email, name, role };
+  const email = prop.getProperty('email');
+  const name = prop.getProperty('name');
+  const role = prop.getProperty('role');
+  return email ? { email, name, role } : null;
 }
 
+/* ลบ session */
 function logoutUser() {
   PropertiesService.getUserProperties().deleteAllProperties();
 }
 
-/* ---------- DEV TEST ---------- */
+
+
+/* ---------- DEV TEST ---------- */
 function testListEvents() {
   const ev = listEvents();
   Logger.log(`👉 events=${ev.length}`);
