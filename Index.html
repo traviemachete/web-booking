@@ -21,33 +21,37 @@
 </head>
 
 <body>
-
-  <body>
-    <!-- Sidebar Navigation -->
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar">
+    <h5>🏢 ระบบจองห้องประชุม</h5>
+    <li><a href="#" onclick="loadView('form'); return false;" id="nav-form">
+        📝 จองห้องประชุม
+      </a>
+    </li>
+  </nav>
+  <!-- Main Content Area -->
+  <main class="main">
     <?!= include('Sidebar') ?>
-
-    <!-- Main Content Area -->
-    <main class="main">
-      <div id="mainContent">
-        <!-- Dynamic content will be loaded here -->
-        <div class="loading-placeholder">
-          <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-            <h3>🔄 กำลังโหลด...</h3>
-            <p>กรุณารอสักครู่</p>
-          </div>
+    <div id="mainContent">
+      <!-- Dynamic content will be loaded here -->
+      <div class="loading-placeholder">
+        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+          <h3>🔄 กำลังโหลด...</h3>
+          <p>กรุณารอสักครู่</p>
         </div>
       </div>
-    </main>
+    </div>
+  </main>
 
-    <!-- External Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- External Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <!-- Custom JavaScript -->
-    <?!= include('JavaScript') ?>
+  <!-- Custom JavaScript -->
+  <?!= include('JavaScript') ?>
 
-    <script>
-      // Initialize app when page loads
+  <script>
+    // Initialize app when page loads
     document.addEventListener('DOMContentLoaded', function() {
       console.log('🚀 Initializing booking system...');
       
@@ -247,7 +251,7 @@
     });
 
     console.log('📝 Booking system script loaded');
-    </script>
-  </body>
+  </script>
+</body>
 
 </html>
