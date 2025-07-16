@@ -5,7 +5,7 @@
     <input name="email" type="email" placeholder="Email" required />
     <input name="pwd" type="password" placeholder="Password" required />
     <button class="btn blue" type="submit">เข้าสู่ระบบ</button>
-    <p class="small">ยังไม่มีบัญชี? <a href="#" onclick="loadView('register')">ลงทะเบียน</a></p>
+    <p class="small">ยังไม่มีบัญชี? <a href="#" onclick="loadView('registerForm')">ลงทะเบียน</a></p>
   </form>
 </div>
 
@@ -17,7 +17,7 @@ document.getElementById("loginForm").addEventListener("submit", e => {
     pwd:   e.target.pwd.value.trim()
   };
   google.script.run
-    .withSuccessHandler(function(){ parent.M.toast({html:'✅ เข้าสู่ระบบ'}); parent.loadView('calendar'); parent.renderSidebarLinks && parent.renderSidebarLinks(); }) => {
+    .withSuccessHandler(() => {
       M.toast({html: '✅ เข้าสู่ระบบสำเร็จ'});
       renderUserBox();
       loadView('calendar');
