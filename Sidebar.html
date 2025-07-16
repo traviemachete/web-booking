@@ -1,71 +1,173 @@
-<!-- Sidebar.html (Google Style, Connected to main layout) -->
-<div class="sidebar">
-  <h5>Meeting Room</h5>
-  <div class="user-info" id="userInfo">
-    <!-- Filled by renderUserBox() -->
-  </div>
-  <ul class="menu"></ul>
+<!-- Sidebar.html -->
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="user-info" id="userInfo">
+      <!-- แสดงสถานะผู้ใช้ -->
+      <p class="not-logged"><strong>กำลังโหลด...</strong></p>
+    </div>
+
+    <ul class="menu">
+      <li><a href="#" onclick="loadView('calendar'); return false;" class="active" id="nav-calendar">
+          📅 ปฏิทินการจอง
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+
+  <main class="main-content" id="mainContent">
+    <!-- เนื้อหาจะโหลดมาแสดงที่นี่ -->
+  </main>
 </div>
 
+<style>
+  :root {
+    --bg-color: #202124;
+    --text-color: #e8eaed;
+    --primary-color: #8ab4f8;
+    --hover-color: #3c4043;
+    --sidebar-bg: #202124;
+    --sidebar-hover: #3c4043;
+    --btn-login-bg: #8ab4f8;
+    --btn-login-text: #202124;
+    --radius: 8px;
+  }
+
+  .layout {
+    display: flex;
+    min-height: 100vh;
+    font-family: 'Kanit', sans-serif;
+  }
+
+  .sidebar {
+    width: 250px;
+    background-color: var(--sidebar-bg);
+    color: var(--text-color);
+    padding: 1rem;
+    border-right: 1px solid #3c4043;
+  }
+
+  .user-info {
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .user-info p {
+    margin-bottom: 10px;
+    color: var(--text-color);
+  }
+
+  .btn-login {
+    padding: 6px 16px;
+    background-color: var(--btn-login-bg);
+    color: var(--btn-login-text);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .btn-login:hover {
+    background-color: #a4c6fa;
+  }
+
+  .menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .menu li {
+    margin-bottom: 10px;
+  }
+
+  .menu a {
+    color: var(--text-color);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    transition: background-color 0.2s;
+    font-weight: 500;
+  }
+
+  .menu a:hover {
+    background-color: var(--hover-color);
+  }
+
+  .main-content {
+    flex-grow: 1;
+    padding: 20px;
+    background-color: var(--bg-color);
+  }
+
+  @media screen and (max-width: 768px) {
+    .layout {
+      flex-direction: column;
+    }
+
+    .sidebar {
+      width: 100%;
+      height: auto;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 20px;
+    }
+
+    .menu {
+      display: flex;
+      gap: 10px;
+    }
+
+    .main-content {
+      padding-top: 100px;
+    }
+  }
+</style>
+
 <script>
-function renderUserBox(){
-  google.script.run.withSuccessHandler(function(user){
-    const userBox = document.getElementById('userInfo');
-    const menu = document.querySelector('.menu');
-    if(!userBox || !menu) return;
+  // โหลดสถานะผู้ใช้
+  function renderUserBox() {
+    google.script.run.withSuccessHandler(user => {
+      const el = document.getElementById("userInfo");
 
-    // Clear
-    userBox.innerHTML = '';
-    menu.innerHTML = '';
-
-    if(user){ // Logged in
-      userBox.innerHTML = `
-        <p style="text-align:center">👤 <strong>${user.name}</strong></p>
-        <div style="text-align:center">
-          <button class="btn btn-primary" onclick="logout()">🚪 ออกจากระบบ</button>
-        </div>
-      `;
-      menu.insertAdjacentHTML('beforeend',`
-        <li><a href="#" onclick="loadView('calendar')">📅 ปฏิทิน</a></li>
-        <li><a href="#" onclick="ensureAuth(()=>loadView('form'))">📝 จองห้อง</a></li>
-        <li><a href="#" onclick="loadView('today')">📌 รายการวันนี้</a></li>
-        <li><a href="#" onclick="loadView('mybookings')">📋 รายการของฉัน</a></li>
-      `);
-      if(user.role === 'admin'){
-        menu.insertAdjacentHTML('beforeend',`
-          <li><a href="#" onclick="loadView('admin')">🔧 จัดการระบบ</a></li>
-        `);
+      if (user) {
+        el.innerHTML = `
+          <p>👤 <strong>${user.name}</strong></p>
+          <button class="btn-login" onclick="logout()">🚪 ออกจากระบบ</button>
+        `;
+      } else {
+        el.innerHTML = `
+          <p class="not-logged"><strong>ยังไม่ได้เข้าสู่ระบบ</strong></p>
+          <button class="btn-login" onclick="loadView('login')">เข้าสู่ระบบ</button>
+        `;
       }
-    } else { // Guest
-      userBox.innerHTML = `
-        <p style="text-align:center"><strong>ยังไม่ได้เข้าสู่ระบบ</strong></p>
-        <div style="text-align:center">
-          <button class="btn btn-primary" onclick="loadView('login')">🔑 เข้าสู่ระบบ</button>
-        </div>
-      `;
-      menu.insertAdjacentHTML('beforeend',`
-        <li><a href="#" onclick="loadView('calendar')">📅 ปฏิทิน</a></li>
-      `);
-    }
-  }).getSessionUser();
-}
+    }).getSessionUser();
+  }
 
-function logout(){
-  google.script.run.withSuccessHandler(()=>{
-    renderUserBox();
-    loadView('calendar');
-  }).logoutUser();
-}
+  function logout() {
+    google.script.run.withSuccessHandler(() => {
+      renderUserBox();
+      loadView('calendar');
+    }).logoutUser();
+  }
 
-function ensureAuth(cb){
-  google.script.run.withSuccessHandler(function(user){
-    if(user){ cb(); }
-    else {
-      M.toast({ html:'กรุณาเข้าสู่ระบบก่อนทำรายการ' });
-      loadView('login');
-    }
-  }).getSessionUser();
-}
+  function ensureAuth(callback){
+    google.script.run.withSuccessHandler(user => {
+      if (user) {
+        callback();
+      } else {
+        M.toast({html: "กรุณาเข้าสู่ระบบก่อนจองห้องประชุม"});
+        loadView('login');
+      }
+    }).getSessionUser();
+  }
 
-window.addEventListener('DOMContentLoaded', renderUserBox);
+  window.addEventListener("DOMContentLoaded", renderUserBox);
 </script>
