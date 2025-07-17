@@ -24,7 +24,7 @@
   <!-- Sidebar Navigation -->
   <nav class="sidebar">
     <h5>🏢 ระบบจองห้องประชุม</h5>
-    
+
     <!-- User Info Section -->
     <div class="user-info" id="userInfo">
       <div class="user-loading">
@@ -70,8 +70,8 @@
 
   <script>
     // Global variables
-    let currentUser = null;
-    let isAuthChecked = false;
+    let currUser = null;
+    let authChecked = false;
 
     // Initialize app when page loads
     document.addEventListener('DOMContentLoaded', function() {
@@ -122,21 +122,21 @@
         google.script.run
           .withSuccessHandler(function(user) {
             currentUser = user;
-            isAuthChecked = true;
+            authChecked = true;
             renderUserBox(user);
             console.log('👤 User status:', user ? `Logged in as ${user.name}` : 'Not logged in');
           })
           .withFailureHandler(function(error) {
             console.error('❌ Auth check failed:', error);
             currentUser = null;
-            isAuthChecked = true;
+            authChecked = true;
             renderUserBox(null);
           })
           .getSessionUser();
       } else {
         // Fallback for testing
         currentUser = null;
-        isAuthChecked = true;
+        authChecked = true;
         renderUserBox(null);
         console.log('⚠️ Google Apps Script not available');
       }
@@ -218,7 +218,7 @@
 
     // Check auth before navigation
     function checkAuthAndNavigate(viewName) {
-      if (!isAuthChecked) {
+      if (!authChecked) {
         // Wait for auth check
         setTimeout(() => checkAuthAndNavigate(viewName), 200);
         return;
@@ -301,7 +301,8 @@
         form: 'Form',
         list: 'TodayList',
         login: 'Login',
-        register: 'Register'
+        register: 'Register',
+        forgot: 'ForgotPassword',
       };
 
       const templateName = viewMap[viewName] || 'CalendarView';
@@ -617,10 +618,11 @@
     window.refreshCalendarData = refreshCalendarData;
     window.logout = logout;
     window.currentUser = currentUser;
-    window.isAuthChecked = isAuthChecked;
+    window.authChecked = authChecked;
 
     console.log('📝 Booking system script loaded');
   </script>
+
 </body>
 
 </html>
