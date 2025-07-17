@@ -7,68 +7,38 @@
         <h2 class="logo-text">ระบบจองห้องประชุม</h2>
       </div>
       <h3 class="auth-title">สมัครสมาชิก</h3>
-      <p class="auth-subtitle">สร้างบัญชีเพื่อเข้าใช้งานระบบจองห้องประชุม</p>
+      <p class="auth-subtitle">กรุณากรอกข้อมูลให้ครบถ้วน</p>
     </div>
 
     <form id="registerForm" class="auth-form">
       <div class="form-group">
-        <label for="registerName" class="form-label">ชื่อ - นามสกุล</label>
-        <input 
-          id="registerName"
-          name="name" 
-          type="text" 
-          class="form-input" 
-          placeholder="เช่น นายสมชาย ใจดี"
-          required 
-        />
+        <label for="registerName">ชื่อ-นามสกุล</label>
+        <input type="text" id="registerName" name="name" class="form-input" required>
       </div>
 
       <div class="form-group">
-        <label for="registerEmail" class="form-label">อีเมล</label>
-        <input 
-          id="registerEmail"
-          name="email" 
-          type="email" 
-          class="form-input" 
-          placeholder="example@company.com"
-          required 
-        />
+        <label for="registerNickname">ชื่อเล่น</label>
+        <input type="text" id="registerNickname" name="nickname" class="form-input" required>
       </div>
 
       <div class="form-group">
-        <label for="registerPassword" class="form-label">รหัสผ่าน</label>
-        <input 
-          id="registerPassword"
-          name="pwd" 
-          type="password" 
-          class="form-input" 
-          placeholder="กรอกรหัสผ่าน"
-          required 
-        />
-        <div class="form-help">รหัสผ่านควรมีความยาวอย่างน้อย 6 ตัวอักษร</div>
+        <label for="registerEmail">อีเมล (สำหรับล็อกอิน)</label>
+        <input type="email" id="registerEmail" name="email" class="form-input" required>
       </div>
 
       <div class="form-group">
-        <label for="registerConfirm" class="form-label">ยืนยันรหัสผ่าน</label>
-        <input 
-          id="registerConfirm"
-          name="confirm" 
-          type="password" 
-          class="form-input" 
-          placeholder="กรอกรหัสผ่านอีกครั้ง"
-          required 
-        />
+        <label for="registerPassword">รหัสผ่าน</label>
+        <input type="password" id="registerPassword" name="password" class="form-input" required>
       </div>
 
-      <button type="submit" class="auth-btn primary" id="registerBtn">
-        <span class="btn-text">สร้างบัญชี</span>
-      </button>
+      <div class="form-group">
+        <label for="registerPhone">เบอร์โทรศัพท์</label>
+        <input type="tel" id="registerPhone" name="phone" class="form-input" required>
+      </div>
 
-      <div class="auth-footer">
-        <p class="auth-link-text">
-          มีบัญชีแล้ว? 
-          <a href="#" onclick="loadView('login'); return false;" class="auth-link">เข้าสู่ระบบ</a>
-        </p>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">✅ สร้างบัญชี</button>
+        <button type="button" class="btn btn-secondary" onclick="loadView('login')">ย้อนกลับ</button>
       </div>
     </form>
   </div>
@@ -79,7 +49,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: calc(100vh - 100px);
+    min-height: auto;
+    overflow-y: auto;
     padding: 20px;
     background: var(--bg-secondary);
   }
@@ -261,7 +232,9 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .auth-footer {
@@ -335,133 +308,172 @@
     }
 
     .form-input {
-      font-size: 16px; /* Prevent zoom on iOS */
+      font-size: 16px;
+      /* Prevent zoom on iOS */
     }
   }
 </style>
 
+<!-- แก้ไข Register.html Script Section -->
 <script>
-document.getElementById("registerForm").addEventListener("submit", function(e) {
-  e.preventDefault();
-  
-  const btn = document.getElementById("registerBtn");
-  const originalText = btn.innerHTML;
-  
-  const name = e.target.name.value.trim();
-  const email = e.target.email.value.trim();
-  const pwd = e.target.pwd.value.trim();
-  const confirm = e.target.confirm.value.trim();
-
-  // Client-side validation
-  if (!validateForm(name, email, pwd, confirm)) {
+  safeReady (function () {
+  const form = document.getElementById('registerForm');
+  if (!form) {
+    console.error('❌ Register form not found');
     return;
   }
 
-  // Show loading state
-  btn.disabled = true;
-  btn.classList.add("loading");
-  btn.innerHTML = '<span class="btn-text">กำลังสร้างบัญชี...</span>';
+  const btn = form.querySelector('button[type="submit"]');
 
-  if (typeof google !== 'undefined' && google.script && google.script.run) {
-    google.script.run
-      .withSuccessHandler(function(result) {
-        btn.disabled = false;
-        btn.classList.remove("loading");
-        btn.innerHTML = originalText;
-        
-        // Show success message
-        if (typeof Swal !== 'undefined') {
-          Swal.fire({
-            icon: 'success',
-            title: 'สร้างบัญชีสำเร็จ! 🎉',
-            text: 'ยินดีต้อนรับเข้าสู่ระบบจองห้องประชุม',
-            timer: 2000,
-            showConfirmButton: false
-          });
-        }
-        
-        // Update user info and redirect
-        if (typeof renderUserBox === 'function') {
-          renderUserBox();
-        }
-        setTimeout(() => {
-          loadView('calendar');
-        }, 1500);
-      })
-      .withFailureHandler(function(error) {
-        btn.disabled = false;
-        btn.classList.remove("loading");
-        btn.innerHTML = originalText;
-        
-        if (typeof Swal !== 'undefined') {
-          Swal.fire({
-            icon: 'error',
-            title: 'สร้างบัญชีไม่สำเร็จ',
-            text: error.message || 'เกิดข้อผิดพลาดในการสร้างบัญชี'
-          });
-        }
-      })
-      .registerUser({name, email, pwd});
-  } else {
-    // Fallback for testing
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.classList.remove("loading");
-      btn.innerHTML = originalText;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    
+    console.log('📝 Register form submitted');
+
+    // Clear previous errors
+    clearErrors();
+
+    // Get form data
+    const name = document.getElementById("registerName").value.trim();
+    const nickname = document.getElementById("registerNickname").value.trim();
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value.trim();
+    const phone = document.getElementById("registerPhone").value.trim();
+
+    console.log('📋 Form data:', { name, nickname, email, phone, passwordLength: password.length });
+
+    // Validate
+    if (!name || name.length < 2) {
+      showError('registerName', 'กรุณากรอกชื่อ-นามสกุล (อย่างน้อย 2 ตัวอักษร)');
+      return;
+    }
+    if (!nickname) {
+      showError('registerNickname', 'กรุณากรอกชื่อเล่น');
+      return;
+    }
+    if (!email || !isValidEmail(email)) {
+      showError('registerEmail', 'กรุณากรอกอีเมลที่ถูกต้อง');
+      return;
+    }
+    if (!password || password.length < 4) {
+      showError('registerPassword', 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร');
+      return;
+    }
+    if (!phone) {
+      showError('registerPhone', 'กรุณากรอกเบอร์โทรศัพท์');
+      return;
+    }
+
+    // Disable button and show loading
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ กำลังสมัคร...';
+
+    const userData = { 
+      name, 
+      nickname,
+      email, 
+      password,
+      phone 
+    };
+
+    console.log('🚀 Sending registration data:', userData);
+
+    // Check if Google Apps Script is available
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function(result) {
+          console.log('✅ Registration successful:', result);
+          
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              icon: 'success',
+              title: 'สมัครสมาชิกสำเร็จ! 🎉',
+              text: 'กำลังกลับสู่หน้าเข้าสู่ระบบ...',
+              timer: 2000,
+              showConfirmButton: false
+            });
+          } else {
+            alert('สมัครสมาชิกสำเร็จ!');
+          }
+          
+          // Reset form
+          form.reset();
+          
+          // Redirect to login after delay
+          setTimeout(() => {
+            if (typeof loadView === 'function') {
+              loadView('login');
+            } else {
+              console.log('✅ Registration complete - redirect to login');
+            }
+          }, 2000);
+        })
+        .withFailureHandler(function(error) {
+          console.error('❌ Registration failed:', error);
+          
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              icon: 'error',
+              title: 'สมัครไม่สำเร็จ',
+              text: error.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่'
+            });
+          } else {
+            alert('สมัครไม่สำเร็จ: ' + (error.message || 'เกิดข้อผิดพลาด'));
+          }
+        })
+        .registerUser(userData);
+    } else {
+      // Fallback for testing without Google Apps Script
+      console.warn('⚠️ Google Apps Script not available - testing mode');
       
-      if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          icon: 'info',
-          title: 'โหมดทดสอบ',
-          text: 'เชื่อมต่อกับ Google Apps Script เพื่อใช้งานจริง'
-        });
-      }
-    }, 1000);
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'info',
+            title: 'โหมดทดสอบ',
+            text: 'เชื่อมต่อกับ Google Apps Script เพื่อใช้งานจริง'
+          });
+        } else {
+          alert('โหมดทดสอบ: เชื่อมต่อกับ Google Apps Script เพื่อใช้งานจริง');
+        }
+      }, 1000);
+    }
+  });
+
+  // Focus first input
+  const firstInput = document.getElementById('registerName');
+  if (firstInput) {
+    firstInput.focus();
   }
 });
-
-function validateForm(name, email, pwd, confirm) {
-  let isValid = true;
-
-  // Clear previous errors
-  clearErrors();
-
-  // Name validation
-  if (!name || name.length < 2) {
-    showError('registerName', 'กรุณากรอกชื่อ-นามสกุล');
-    isValid = false;
-  }
-
-  // Email validation
-  if (!email || !isValidEmail(email)) {
-    showError('registerEmail', 'กรุณากรอกอีเมลที่ถูกต้อง');
-    isValid = false;
-  }
-
-  // Password validation
-  if (!pwd || pwd.length < 6) {
-    showError('registerPassword', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
-    isValid = false;
-  }
-
-  // Confirm password validation
-  if (pwd !== confirm) {
-    showError('registerConfirm', 'รหัสผ่านไม่ตรงกัน');
-    isValid = false;
-  }
-
-  return isValid;
-}
 
 function showError(fieldId, message) {
   const field = document.getElementById(fieldId);
   if (field) {
     field.classList.add('error');
     
+    // Remove existing error message
+    const existingError = field.parentNode.querySelector('.error-message');
+    if (existingError) existingError.remove();
+    
+    // Add new error message
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-message';
     errorDiv.innerHTML = `⚠️ ${message}`;
     field.parentNode.appendChild(errorDiv);
+    
+    // Focus the field with error
+    field.focus();
   }
 }
 
@@ -480,24 +492,14 @@ function isValidEmail(email) {
   return emailRegex.test(email);
 }
 
-// Real-time validation
-document.addEventListener('DOMContentLoaded', function() {
-  const inputs = document.querySelectorAll('.form-input');
-  
-  inputs.forEach(input => {
-    input.addEventListener('input', function() {
-      if (this.classList.contains('error')) {
-        this.classList.remove('error');
-        const errorMsg = this.parentNode.querySelector('.error-message');
-        if (errorMsg) errorMsg.remove();
-      }
-    });
-  });
+// Debug function
+function debugRegister() {
+  console.log('🔧 Debug register form');
+  console.log('Google Apps Script available:', typeof google !== 'undefined' && google.script);
+  console.log('Swal available:', typeof Swal !== 'undefined');
+  console.log('loadView available:', typeof loadView !== 'undefined');
+}
 
-  // Auto-focus first input
-  const nameInput = document.getElementById('registerName');
-  if (nameInput) {
-    nameInput.focus();
-  }
-});
+// Call debug on load
+debugRegister();
 </script>
