@@ -135,6 +135,7 @@
   // โหลดสถานะผู้ใช้
   function renderUserBox() {
     google.script.run.withSuccessHandler(user => {
+      console.log("👤 Current User:", user);
       const el = document.getElementById("userInfo");
 
       if (user) {
