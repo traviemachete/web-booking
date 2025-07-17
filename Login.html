@@ -8,30 +8,31 @@
       </div>
       <h3 class="auth-title">เข้าสู่ระบบ</h3>
       <p class="auth-subtitle">เพื่อเข้าใช้งานระบบจองห้องประชุม</p>
+
     </div>
 
     <form id="loginForm" class="auth-form">
       <div class="form-group">
         <label for="loginEmail" class="form-label">อีเมล</label>
-        <input 
+        <input
           id="loginEmail"
-          name="email" 
-          type="email" 
-          class="form-input" 
+          name="email"
+          type="email"
+          class="form-input"
           placeholder="example@company.com"
-          required 
+          required
         />
       </div>
 
       <div class="form-group">
         <label for="loginPassword" class="form-label">รหัสผ่าน</label>
-        <input 
+        <input
           id="loginPassword"
-          name="pwd" 
-          type="password" 
-          class="form-input" 
+          name="pwd"
+          type="password"
+          class="form-input"
           placeholder="กรอกรหัสผ่าน"
-          required 
+          required
         />
       </div>
 
@@ -41,9 +42,13 @@
 
       <div class="auth-footer">
         <p class="auth-link-text">
-          ยังไม่มีบัญชี? 
+          ยังไม่มีบัญชี?
           <a href="#" onclick="loadView('register'); return false;" class="auth-link">สมัครสมาชิก</a>
         </p>
+        <p class="auth-link-text">
+          ลืมรหัสผ่าน? <a href="#" class="auth-link" onclick="loadView('forgot')">กดที่นี่</a>
+        </p>
+
       </div>
     </form>
   </div>
@@ -212,7 +217,9 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .auth-footer {
@@ -286,13 +293,14 @@
     }
 
     .form-input {
-      font-size: 16px; /* Prevent zoom on iOS */
+      font-size: 16px;
+      /* Prevent zoom on iOS */
     }
   }
 </style>
 
 <script>
-document.getElementById("loginForm").addEventListener("submit", function(e) {
+  document.getElementById("loginForm").addEventListener("submit", function(e) {
   e.preventDefault();
   
   const btn = document.getElementById("loginBtn");
@@ -326,6 +334,25 @@ document.getElementById("loginForm").addEventListener("submit", function(e) {
           });
         }
         
+        if (result && result.email) {
+          currentUser = {
+            email: result.email,
+            name: result.name,
+            role: result.role
+          };
+          isAuthChecked = true;
+
+          if (typeof renderUserBox === 'function') {
+            renderUserBox(currentUser);
+          }
+
+          setTimeout(() => {
+            loadView('calendar');
+          }, 1500);
+        } else {
+          Swal.fire('ไม่สามารถเข้าสู่ระบบได้', 'ไม่พบข้อมูลผู้ใช้', 'error');
+        }
+
         // Update user info and redirect
         if (typeof renderUserBox === 'function') {
           renderUserBox();
