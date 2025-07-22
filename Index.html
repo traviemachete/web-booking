@@ -376,6 +376,16 @@
             }
           }
         }, 200);
+
+        if (viewName === 'forgot') {
+          if (typeof initForgotPassword === 'function') {
+            initForgotPassword();
+            console.log('✅ initForgotPassword() called');
+          } else {
+            console.warn('⚠️ initForgotPassword() not found');
+          }
+        }
+
       }
       
       // Handle form view
@@ -384,7 +394,7 @@
           setupFormDefaults();
         }, 100);
       }
-      
+    
       // Sync theme toggle in header if exists
       const headerToggle = document.getElementById('themeToggleHeader');
       if (headerToggle) {
@@ -621,6 +631,7 @@
     window.authChecked = authChecked;
 
     console.log('📝 Booking system script loaded');
+
   </script>
 
 </body>
