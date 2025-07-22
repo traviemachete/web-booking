@@ -314,28 +314,83 @@ let currentUser = null;
 
 /* ========== AUTHENTICATION MANAGEMENT ========== */
 
+function submitLoginForm(event) {
+  event.preventDefault();
+
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  google.script.run
+    .withSuccessHandler(function(user) {
+      console.log('✅ Login success:', user);
+      currentUser = user;         // <== ตั้ง currentUser ให้ชัดเจน
+      isAuthChecked = true;       // <== ต้องตั้ง isAuthChecked = true
+      renderUserBox(user);        // แสดงข้อมูลผู้ใช้ที่ Sidebar
+      loadView('calendar');       // เปลี่ยนหน้าทันทีแบบไม่โดน Swal
+    })
+    .withFailureHandler(function(error) {
+      console.error('❌ Login error:', error.message);
+      Swal.fire('เข้าสู่ระบบไม่สำเร็จ', error.message, 'error');
+    })
+    .login({ email, password });
+}
+
+
 function checkAuthAndRenderUserBox() {
+  console.log('🔍 Checking authentication...');
+  
   if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
       .withSuccessHandler(function(user) {
-        currentUser = user;
-        isAuthChecked = true;
+        console.log('✅ Auth check result:', user);
+        
+        // ✅ อัปเดต global variables
+        window.currentUser = user;
+        window.isAuthChecked = true;
+        window.authChecked = true;
+        
+        // Update legacy variables
+        if (typeof currentUser !== 'undefined') currentUser = user;
+        if (typeof isAuthChecked !== 'undefined') isAuthChecked = true;
+        if (typeof authChecked !== 'undefined') authChecked = true;
+        
         renderUserBox(user);
         console.log('👤 User status:', user ? `Logged in as ${user.name}` : 'Not logged in');
+        
+        // Trigger any pending auth checks
+        if (window.pendingNavigation) {
+          console.log('🔄 Processing pending navigation:', window.pendingNavigation);
+          checkAuthAndNavigate(window.pendingNavigation);
+          window.pendingNavigation = null;
+        }
       })
       .withFailureHandler(function(error) {
         console.error('❌ Auth check failed:', error);
-        currentUser = null;
-        isAuthChecked = true;
+        
+        // Set as checked but no user
+        window.currentUser = null;
+        window.isAuthChecked = true;
+        window.authChecked = true;
+        
+        if (typeof currentUser !== 'undefined') currentUser = null;
+        if (typeof isAuthChecked !== 'undefined') isAuthChecked = true;
+        if (typeof authChecked !== 'undefined') authChecked = true;
+        
         renderUserBox(null);
       })
       .getSessionUser();
   } else {
     // Fallback for testing
-    currentUser = null;
-    isAuthChecked = true;
-    renderUserBox(null);
     console.log('⚠️ Google Apps Script not available');
+    window.currentUser = null;
+    window.isAuthChecked = true;
+    window.authChecked = true;
+    
+    if (typeof currentUser !== 'undefined') currentUser = null;
+    if (typeof isAuthChecked !== 'undefined') isAuthChecked = true;
+    if (typeof authChecked !== 'undefined') authChecked = true;
+    
+    renderUserBox(null);
   }
 }
 
@@ -412,40 +467,34 @@ function logout() {
 }
 
 function checkAuthAndNavigate(viewName) {
-  if (!isAuthChecked) {
-    // Wait for auth check
-    setTimeout(() => checkAuthAndNavigate(viewName), 200);
+  // ใช้ session ที่ดึงมาก่อนหน้า (เช่นจาก renderUserBox)
+  if (window.currentUser) {
+    loadView(viewName);
     return;
   }
 
-  if (currentUser) {
-    // User is logged in, proceed to view
-    loadView(viewName);
-  } else {
-    // User not logged in, show login prompt
-    if (typeof Swal !== 'undefined') {
+  // fallback: ดึง session แบบ async ถ้าไม่เคย login
+  google.script.run.withSuccessHandler(user => {
+    if (user) {
+      window.currentUser = user;
+      loadView(viewName);
+    } else {
       Swal.fire({
         icon: 'info',
         title: 'จำเป็นต้องเข้าสู่ระบบ',
         text: 'กรุณาเข้าสู่ระบบเพื่อทำการจองห้องประชุม',
         showCancelButton: true,
         confirmButtonText: 'เข้าสู่ระบบ',
-        cancelButtonText: 'ยกเลิก',
-        confirmButtonColor: '#1a73e8',
-        cancelButtonColor: '#6c757d'
-      }).then((result) => {
+        cancelButtonText: 'ยกเลิก'
+      }).then(result => {
         if (result.isConfirmed) {
           loadView('login');
         }
       });
-    } else {
-      // Fallback without SweetAlert
-      if (confirm('กรุณาเข้าสู่ระบบเพื่อทำการจองห้องประชุม')) {
-        loadView('login');
-      }
     }
-  }
+  }).getSessionUser();
 }
+
 
 /* ========== CALENDAR MANAGEMENT ========== */
 
@@ -813,16 +862,6 @@ function loadView(viewName, forceRefresh = false) {
       </div>
     `;
   }
-  
-  // View mapping
-  const viewMap = {
-    calendar: 'CalendarView',
-    form: 'Form',
-    list: 'TodayList',
-    login: 'Login',
-    register: 'Register',
-    forgot: 'ForgotPassword'
-  };
 
   const templateName = viewMap[viewName] || 'CalendarView';
   
@@ -886,13 +925,20 @@ function handleViewLoaded(viewName) {
     case 'list':
       loadBookingList();
       break;
-      
+
     case 'login':
+      initLoginForm();
+      break;
+      
     case 'register':
-      // Auth views don't need special handling
+      initRegisterForm();
+      break;
+
+    case 'forgot':
+      initForgotPassword();  // ✅ ตรงนี้คือสิ่งที่สำคัญ
       break;
   }
-  
+
   // Sync theme toggle in header if exists
   const headerToggle = document.getElementById('themeToggleHeader');
   if (headerToggle) {
@@ -1240,11 +1286,136 @@ document.getElementById("registerForm").addEventListener("submit", function (e) 
     })
     .registerUser(user);
 });
+
+// 1. แก้ไข checkAuthAndNavigate function ใน JavaScript.html
+function checkAuthAndNavigate(viewName) {
+  console.log('🔍 checkAuthAndNavigate called for:', viewName);
+  console.log('🔍 Current auth state:', {
+    currentUser: window.currentUser,
+    isAuthChecked: window.isAuthChecked || isAuthChecked,
+    authChecked: window.authChecked
+  });
+
+  // ใช้ global variable ที่ถูกต้อง
+  const user = window.currentUser || currentUser;
+  const checked = window.isAuthChecked || isAuthChecked || window.authChecked || authChecked;
+
+  if (!checked) {
+    console.log('⏳ Auth not checked yet, waiting...');
+    // รอให้ auth check เสร็จก่อน
+    setTimeout(() => checkAuthAndNavigate(viewName), 300);
+    return;
+  }
+
+  if (user && user.email) {
+    console.log('✅ User authenticated, proceeding to:', viewName);
+    // User is logged in, proceed to view
+    loadView(viewName);
+  } else {
+    console.log('❌ User not authenticated, showing login prompt');
+    // User not logged in, show login prompt
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'info',
+        title: 'จำเป็นต้องเข้าสู่ระบบ',
+        text: 'กรุณาเข้าสู่ระบบเพื่อทำการจองห้องประชุม',
+        showCancelButton: true,
+        confirmButtonText: 'เข้าสู่ระบบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#1a73e8',
+        cancelButtonColor: '#6c757d'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          loadView('login');
+        }
+      });
+    } else {
+      // Fallback without SweetAlert
+      if (confirm('กรุณาเข้าสู่ระบบเพื่อทำการจองห้องประชุม')) {
+        loadView('login');
+      }
+    }
+  }
+}
+
+
 </script>
+
+<script>
+  function initForgotPassword() {
+  const form = document.getElementById('forgotForm');
+  if (!form) return;
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    // ✅ ดึงค่าจาก id ตรง ๆ จะปลอดภัยกว่า
+    const email = document.getElementById("forgotEmail").value.trim();
+    const newPassword = document.getElementById("newPassword").value.trim();
+
+    if (!email || !newPassword) {
+      Swal.fire("กรุณากรอกข้อมูลให้ครบ", "", "warning");
+      return;
+    }
+
+    const payload = { email, password: newPassword };
+
+    console.log('🔐 Submitting resetPassword:', payload);
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          console.log('✅ resetPassword response:', res);
+          Swal.fire("เปลี่ยนรหัสผ่านสำเร็จ", "", "success").then(() => {
+            loadView('login');
+          });
+        })
+        .withFailureHandler(function (err) {
+          console.error('❌ resetPassword error:', err);
+          Swal.fire("เกิดข้อผิดพลาด", err.message || "ไม่สามารถเปลี่ยนรหัสผ่านได้", "error");
+        })
+        .resetPassword(payload);  // ชื่อฟังก์ชันตรงกับ Code.gs แล้ว
+    }
+  });
+}
+</script>
+
+<script>
+  function handleResetClick() {
+  const email = document.getElementById("forgotEmail").value.trim();
+  const newPassword = document.getElementById("newPassword").value.trim();
+
+  if (!email || !newPassword) {
+    Swal.fire("กรุณากรอกข้อมูลให้ครบ", "", "warning");
+    return;
+  }
+
+  const payload = { email, password: newPassword };
+  console.log('🔐 Submitting resetPassword:', payload);
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function (res) {
+        console.log('✅ resetPassword response:', res);
+        Swal.fire("เปลี่ยนรหัสผ่านสำเร็จ", "", "success").then(() => {
+          loadView('login');
+        });
+      })
+      .withFailureHandler(function (err) {
+        console.error('❌ resetPassword error:', err);
+        Swal.fire("เกิดข้อผิดพลาด", err.message || "ไม่สามารถเปลี่ยนรหัสผ่านได้", "error");
+      })
+      .resetPassword(payload);
+  }
+}
+</script>
+
+
+
 
 <!-- ===== Emergency Frontend Fix - เพิ่มใน JavaScript.html ===== -->
 <script>
-// 🚨 EMERGENCY FIX - Debug และแก้ไขปัญหา Frontend
+  // 🚨 EMERGENCY FIX - Debug และแก้ไขปัญหา Frontend
 
 // 1. Override handleLoginSubmit function
 function handleLoginSubmit(event) {
@@ -1385,11 +1556,21 @@ function handleLoginSuccess(result, btn) {
   }
   
   if (result && result.email) {
-    // Update global state
-    if (typeof window !== 'undefined') {
-      window.currentUser = result;
-      window.isAuthChecked = true;
-    }
+    // ✅ สำคัญ: อัปเดต global variables ทั้งหมด
+    window.currentUser = result;
+    window.isAuthChecked = true;
+    window.authChecked = true;
+    
+    // Update legacy variables too
+    if (typeof currentUser !== 'undefined') currentUser = result;
+    if (typeof isAuthChecked !== 'undefined') isAuthChecked = true;
+    if (typeof authChecked !== 'undefined') authChecked = true;
+    
+    console.log('✅ Global auth state updated:', {
+      windowCurrentUser: window.currentUser,
+      windowIsAuthChecked: window.isAuthChecked,
+      windowAuthChecked: window.authChecked
+    });
     
     // Show success message
     if (typeof Swal !== 'undefined') {
@@ -1443,6 +1624,33 @@ function handleLoginError(errorMessage, btn) {
     alert('เข้าสู่ระบบไม่สำเร็จ: ' + errorMessage);
   }
 }
+
+function loadBookingFormView() {
+  google.script.run.withSuccessHandler(function(user) {
+    if (!user || !user.email) {
+      Swal.fire({
+        icon: 'info',
+        title: 'จำเป็นต้องเข้าสู่ระบบ',
+        text: 'กรุณาเข้าสู่ระบบก่อนทำการจองห้องประชุม',
+        showCancelButton: true,
+        confirmButtonText: 'เข้าสู่ระบบ',
+        cancelButtonText: 'ยกเลิก'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          loadView('login');
+        }
+      });
+      return;
+    }
+
+    // ถ้าเข้าสู่ระบบแล้วค่อยโหลดแบบฟอร์ม
+    ensureAuth(() => {
+      loadView('form');
+    });
+
+  }).getSessionUser();
+}
+
 
 // 2. Override handleRegisterSubmit function
 function handleRegisterSubmit(event) {
@@ -1606,4 +1814,34 @@ setInterval(function() {
 }, 2000);
 
 console.log('✅ Emergency frontend fixes loaded');
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+  const forgotForm = document.getElementById('forgotForm');
+  if (forgotForm) {
+    forgotForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const email = document.getElementById('forgotEmail').value.trim();
+      const password = document.getElementById('newPassword').value;
+
+      if (!email || !password) {
+        Swal.fire('กรุณากรอกอีเมลและรหัสผ่าน');
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(() => {
+          Swal.fire('เปลี่ยนรหัสผ่านสำเร็จ', '', 'success').then(() => {
+            loadView('login');
+          });
+        })
+        .withFailureHandler(error => {
+          Swal.fire('เกิดข้อผิดพลาด', error.message || error, 'error');
+        })
+        .resetPassword({ email, password }); // ✅ ส่งแบบเดียวกับ Register
+    });
+  }
+});
 </script>
