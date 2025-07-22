@@ -9,7 +9,7 @@
     <!-- Date and Time Section -->
     <div class="form-section">
       <h4 class="section-title">📅 วันที่และเวลา</h4>
-      
+
       <div class="form-group">
         <label class="form-label" for="date">
           <span class="label-text">วันที่ต้องการใช้ห้อง</span>
@@ -41,13 +41,13 @@
     <!-- Personal Information Section -->
     <div class="form-section">
       <h4 class="section-title">👤 ข้อมูลผู้จอง</h4>
-      
+
       <div class="form-group">
         <label class="form-label" for="name">
           <span class="label-text">ชื่อผู้จอง</span>
           <span class="label-required">*</span>
         </label>
-        <input type="text" name="name" id="name" class="form-input" required 
+        <input type="text" name="name" id="name" class="form-input" required
                placeholder="เช่น นายสมชาย ใจดี">
       </div>
 
@@ -56,7 +56,7 @@
           <label class="form-label" for="department">
             <span class="label-text">สังกัดฝ่าย</span>
           </label>
-          <input type="text" name="department" id="department" class="form-input" 
+          <input type="text" name="department" id="department" class="form-input"
                  placeholder="เช่น ฝ่ายไอที, ฝ่ายขาย">
         </div>
 
@@ -64,7 +64,7 @@
           <label class="form-label" for="company">
             <span class="label-text">สังกัดบริษัท</span>
           </label>
-          <input type="text" name="company" id="company" class="form-input" 
+          <input type="text" name="company" id="company" class="form-input"
                  placeholder="เช่น บริษัท ABC จำกัด">
         </div>
       </div>
@@ -73,12 +73,12 @@
     <!-- Meeting Details Section -->
     <div class="form-section">
       <h4 class="section-title">📋 รายละเอียดการประชุม</h4>
-      
+
       <div class="form-group">
         <label class="form-label" for="purpose">
           <span class="label-text">วัตถุประสงค์</span>
         </label>
-        <input type="text" name="purpose" id="purpose" class="form-input" 
+        <input type="text" name="purpose" id="purpose" class="form-input"
                placeholder="เช่น ประชุมทีม, อบรม, สัมมนา, ประชุมลูกค้า">
         <div class="form-help">ระบุวัตถุประสงค์ของการใช้ห้องประชุม</div>
       </div>
@@ -87,7 +87,7 @@
         <label class="form-label" for="email">
           <span class="label-text">อีเมล</span>
         </label>
-        <input type="email" name="email" id="email" class="form-input" 
+        <input type="email" name="email" id="email" class="form-input"
                placeholder="example@company.com">
         <div class="form-help">สำหรับการติดต่อและการยืนยันการจอง</div>
       </div>
@@ -99,7 +99,7 @@
         <span class="btn-icon">↩️</span>
         <span class="btn-text">ย้อนกลับ</span>
       </button>
-      
+
       <button type="submit" class="btn btn-primary" id="submit-btn">
         <span class="btn-icon">💾</span>
         <span class="btn-text">บันทึกการจอง</span>
@@ -313,6 +313,7 @@
     from {
       transform: rotate(0turn);
     }
+
     to {
       transform: rotate(1turn);
     }
@@ -430,7 +431,8 @@
 
     .form-input {
       padding: 10px 12px;
-      font-size: 16px; /* Prevent zoom on iOS */
+      font-size: 16px;
+      /* Prevent zoom on iOS */
     }
   }
 
@@ -466,9 +468,10 @@
 
 <script>
   // Form initialization and validation
-  document.addEventListener('DOMContentLoaded', function() {
-    initializeForm();
-  });
+  document.addEventListener('DOMContentLoaded', () => {
+  ensureAuthForForm(); // ใช้ function ใหม่ที่แก้ไขแล้ว
+});
+
 
   function initializeForm() {
     const form = document.getElementById('booking-form');
@@ -711,4 +714,19 @@
 
   // Export functions for global access
   window.resetForm = resetForm;
+
+  function ensureAuthForForm() {
+  const user = window.currentUser || currentUser;
+  const checked = window.isAuthChecked || isAuthChecked || window.authChecked || authChecked;
+  
+  if (checked && user && user.email) {
+    initializeForm();
+  } else if (checked && !user) {
+    // แสดงหน้าต้องล็อกอิน
+    loadView('login');
+  } else {
+    // รอ auth check เสร็จ
+    setTimeout(ensureAuthForForm, 500);
+  }
+}
 </script>
