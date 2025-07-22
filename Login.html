@@ -46,7 +46,8 @@
           <a href="#" onclick="loadView('register'); return false;" class="auth-link">สมัครสมาชิก</a>
         </p>
         <p class="auth-link-text">
-          ลืมรหัสผ่าน? <a href="#" class="auth-link" onclick="loadView('forgot')">กดที่นี่</a>
+          ลืมรหัสผ่าน? <a href="javascript:void(0)" class="auth-link"
+            onclick="console.log('🔐 Forgot password clicked'); setTimeout(() => { if(typeof loadView === 'function') { console.log('✅ loadView found'); loadView('forgot'); } else { console.log('❌ loadView not found'); location.reload(); } }, 100);">กดที่นี่</a>
         </p>
 
       </div>
@@ -55,13 +56,35 @@
 </div>
 
 <style>
+  :root {
+    --bg-color: #ffffff;
+    --bg-secondary: #f7f9fc;
+    --text-color: #111111;
+    --text-secondary: #666666;
+    --border-color: #dddddd;
+    --google-blue: #1a73e8;
+    --google-blue-hover: #1765cc;
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="dark"] {
+    --bg-color: #1e1e1e;
+    --bg-secondary: #121212;
+    --text-color: #f1f1f1;
+    --text-secondary: #bbbbbb;
+    --border-color: #333333;
+    --google-blue: #8ab4f8;
+    --google-blue-hover: #aecbfa;
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
   .auth-container {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: calc(100vh - 100px);
     padding: 20px;
-    background: var(--bg-secondary);
+    background: transparent !important;
   }
 
   .auth-card {
@@ -300,104 +323,95 @@
 </style>
 
 <script>
-  document.getElementById("loginForm").addEventListener("submit", function(e) {
-  e.preventDefault();
-  
-  const btn = document.getElementById("loginBtn");
-  const originalText = btn.innerHTML;
-  
-  // Show loading state
-  btn.disabled = true;
-  btn.classList.add("loading");
-  btn.innerHTML = '<span class="btn-text">กำลังเข้าสู่ระบบ...</span>';
-  
-  const data = {
-    email: e.target.email.value.trim(),
-    pwd: e.target.pwd.value.trim()
-  };
-
-  if (typeof google !== 'undefined' && google.script && google.script.run) {
-    google.script.run
-      .withSuccessHandler(function(result) {
-        btn.disabled = false;
-        btn.classList.remove("loading");
-        btn.innerHTML = originalText;
-        
-        // Show success message
-        if (typeof Swal !== 'undefined') {
-          Swal.fire({
-            icon: 'success',
-            title: 'เข้าสู่ระบบสำเร็จ! 🎉',
-            text: 'ยินดีต้อนรับเข้าสู่ระบบจองห้องประชุม',
-            timer: 2000,
-            showConfirmButton: false
-          });
-        }
-        
-        if (result && result.email) {
-          currentUser = {
-            email: result.email,
-            name: result.name,
-            role: result.role
-          };
-          isAuthChecked = true;
-
-          if (typeof renderUserBox === 'function') {
-            renderUserBox(currentUser);
-          }
-
-          setTimeout(() => {
-            loadView('calendar');
-          }, 1500);
-        } else {
-          Swal.fire('ไม่สามารถเข้าสู่ระบบได้', 'ไม่พบข้อมูลผู้ใช้', 'error');
-        }
-
-        // Update user info and redirect
-        if (typeof renderUserBox === 'function') {
-          renderUserBox();
-        }
-        setTimeout(() => {
-          loadView('calendar');
-        }, 1500);
-      })
-      .withFailureHandler(function(error) {
-        btn.disabled = false;
-        btn.classList.remove("loading");
-        btn.innerHTML = originalText;
-        
-        if (typeof Swal !== 'undefined') {
-          Swal.fire({
-            icon: 'error',
-            title: 'เข้าสู่ระบบไม่สำเร็จ',
-            text: error.message || 'กรุณาตรวจสอบอีเมลและรหัสผ่าน'
-          });
-        }
-      })
-      .loginUser(data);
-  } else {
-    // Fallback for testing
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.classList.remove("loading");
-      btn.innerHTML = originalText;
+  setTimeout(function(){
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
       
-      if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          icon: 'info',
-          title: 'โหมดทดสอบ',
-          text: 'เชื่อมต่อกับ Google Apps Script เพื่อใช้งานจริง'
-        });
-      }
-    }, 1000);
-  }
-});
+      const btn = document.getElementById("loginBtn");
+      const originalText = btn.innerHTML;
+      
+      // Show loading state
+      btn.disabled = true;
+      btn.classList.add("loading");
+      btn.innerHTML = '<span class="btn-text">กำลังเข้าสู่ระบบ...</span>';
+      
+      const data = {
+        email: e.target.email.value.trim(),
+        pwd: e.target.pwd.value.trim()
+      };
 
-// Auto-focus first input
-document.addEventListener('DOMContentLoaded', function() {
-  const emailInput = document.getElementById('loginEmail');
-  if (emailInput) {
-    emailInput.focus();
-  }
-});
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(result) {
+            btn.disabled = false;
+            btn.classList.remove("loading");
+            btn.innerHTML = originalText;
+            
+            if (typeof Swal !== 'undefined') {
+              Swal.fire({
+                icon: 'success',
+                title: 'เข้าสู่ระบบสำเร็จ! 🎉',
+                text: 'ยินดีต้อนรับเข้าสู่ระบบจองห้องประชุม',
+                timer: 2000,
+                showConfirmButton: false
+              });
+            }
+            
+            if (result && result.email) {
+              currentUser = {
+                email: result.email,
+                name: result.name,
+                role: result.role
+              };
+              isAuthChecked = true;
+
+              if (typeof renderUserBox === 'function') {
+                renderUserBox(currentUser);
+              }
+
+              setTimeout(() => {
+                loadView('calendar');
+              }, 1500);
+            } else {
+              Swal.fire('ไม่สามารถเข้าสู่ระบบได้', 'ไม่พบข้อมูลผู้ใช้', 'error');
+            }
+          })
+          .withFailureHandler(function(error) {
+            btn.disabled = false;
+            btn.classList.remove("loading");
+            btn.innerHTML = originalText;
+            
+            if (typeof Swal !== 'undefined') {
+              Swal.fire({
+                icon: 'error',
+                title: 'เข้าสู่ระบบไม่สำเร็จ',
+                text: error.message || 'กรุณาตรวจสอบอีเมลและรหัสผ่าน'
+              });
+            }
+          })
+          .loginUser(data);
+      } else {
+        // Fallback for testing
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.classList.remove("loading");
+          btn.innerHTML = originalText;
+          
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              icon: 'info',
+              title: 'โหมดทดสอบ',
+              text: 'เชื่อมต่อกับ Google Apps Script เพื่อใช้งานจริง'
+            });
+          }
+        }, 1000);
+      }
+    });
+
+    // Auto-focus first input - ย้ายมาใน safeReady
+    const emailInput = document.getElementById('loginEmail');
+    if (emailInput) {
+      emailInput.focus();
+    }
+  }, 100);
 </script>
