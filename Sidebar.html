@@ -3,20 +3,24 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="user-info" id="userInfo">
-      <!-- แสดงสถานะผู้ใช้ -->
       <p class="not-logged"><strong>กำลังโหลด...</strong></p>
     </div>
 
     <ul class="menu">
-      <li><a href="#" onclick="loadView('calendar'); return false;" class="active" id="nav-calendar">
+      <li>
+        <a href="#" onclick="loadView('calendar'); return false;" class="active" id="nav-calendar">
           📅 ปฏิทินการจอง
+        </a>
+      </li>
+      <li>
+        <a href="#" onclick="safeNavigateToForm()"; return false;" id="nav-form">
+          📝 จองห้องประชุม
         </a>
       </li>
     </ul>
   </aside>
 
   <!-- Main Content -->
-
   <main class="main-content" id="mainContent">
     <!-- เนื้อหาจะโหลดมาแสดงที่นี่ -->
   </main>
@@ -132,10 +136,14 @@
 </style>
 
 <script>
-  // โหลดสถานะผู้ใช้
   function renderUserBox() {
     google.script.run.withSuccessHandler(user => {
       console.log("👤 Current User:", user);
+
+      // ✅ สำคัญ: อัปเดตตัวแปร global เพื่อให้ checkAuthAndNavigate ใช้ได้
+      window.currentUser = user || null;
+      window.authChecked = true;
+
       const el = document.getElementById("userInfo");
 
       if (user) {
@@ -159,12 +167,12 @@
     }).logoutUser();
   }
 
-  function ensureAuth(callback){
+  function ensureAuth(callback) {
     google.script.run.withSuccessHandler(user => {
       if (user) {
         callback();
       } else {
-        M.toast({html: "กรุณาเข้าสู่ระบบก่อนจองห้องประชุม"});
+        M.toast({ html: "กรุณาเข้าสู่ระบบก่อนจองห้องประชุม" });
         loadView('login');
       }
     }).getSessionUser();
