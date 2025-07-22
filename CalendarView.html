@@ -6,10 +6,10 @@
       <button class="fc-button refresh-btn" onclick="refreshCalendar()" title="รีเฟรชข้อมูล">
         🔄 รีเฟรช
       </button>
-      <button class="fc-button add-btn" onclick="loadView('form')" title="เพิ่มการจองใหม่">
-        ➕ จองใหม่
+      <button class="fc-button add-btn" onclick="checkAuthAndNavigate('form')" title="เพิ่มการจองใหม่">
+         ➕ จองใหม่
       </button>
-      
+
       <!-- Theme Toggle ย้ายมาไว้ใน header -->
       <div class="theme-switch-wrapper-header">
         <label class="theme-switch">
@@ -56,7 +56,8 @@
     align-items: center;
   }
 
-  .refresh-btn, .add-btn {
+  .refresh-btn,
+  .add-btn {
     font-size: 14px !important;
     padding: 8px 12px !important;
     border-radius: 6px !important;
@@ -65,7 +66,8 @@
     transition: all 0.2s ease !important;
   }
 
-  .refresh-btn:hover, .add-btn:hover {
+  .refresh-btn:hover,
+  .add-btn:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   }
@@ -125,11 +127,11 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
-  .theme-switch-wrapper-header input:checked + .slider {
+  .theme-switch-wrapper-header input:checked+.slider {
     background-color: var(--google-blue);
   }
 
-  .theme-switch-wrapper-header input:checked + .slider::before {
+  .theme-switch-wrapper-header input:checked+.slider::before {
     transform: translateX(20px);
   }
 
@@ -153,15 +155,15 @@
     opacity: 0.3;
   }
 
-  .theme-switch-wrapper-header input:checked + .slider .moon {
+  .theme-switch-wrapper-header input:checked+.slider .moon {
     opacity: 1;
   }
 
-  .theme-switch-wrapper-header input:checked + .slider .sun {
+  .theme-switch-wrapper-header input:checked+.slider .sun {
     opacity: 0.3;
   }
 
-  [data-theme="dark"] .theme-switch-wrapper-header input:checked + .slider {
+  [data-theme="dark"] .theme-switch-wrapper-header input:checked+.slider {
     background-color: #8ab4f8;
   }
 
@@ -231,6 +233,42 @@
 </style>
 
 <script>
+  function safeNavigateToForm() {
+  console.log('🔄 Safe navigate to form called from calendar');
+  
+  // Check if global function exists
+  if (typeof window.safeNavigateToForm === 'function' && window.safeNavigateToForm !== safeNavigateToForm) {
+    window.safeNavigateToForm();
+    return;
+  }
+  
+  // Fallback: use checkAuthAndNavigate directly
+  if (typeof checkAuthAndNavigate === 'function') {
+    checkAuthAndNavigate('form');
+  } else if (typeof window.checkAuthAndNavigate === 'function') {
+    window.checkAuthAndNavigate('form');
+  } else {
+    // Last resort: direct navigation with simple auth check
+    const user = window.currentUser || currentUser;
+    if (user && user.email) {
+      loadView('form');
+    } else {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'info',
+          title: 'จำเป็นต้องเข้าสู่ระบบ',
+          text: 'กรุณาเข้าสู่ระบบเพื่อทำการจองห้องประชุม',
+          confirmButtonText: 'เข้าสู่ระบบ'
+        }).then(() => {
+          loadView('login');
+        });
+      } else {
+        alert('กรุณาเข้าสู่ระบบเพื่อทำการจองห้องประชุม');
+        loadView('login');
+      }
+    }
+  }
+}
   // Refresh calendar data
   function refreshCalendar() {
     if (typeof google !== 'undefined' && google.script && google.script.run) {
